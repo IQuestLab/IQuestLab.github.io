@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>高性能像素沙盘</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: #1a1a1a;
+        color: white;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        min-height: 100svh; /* iOS 地址栏变化时更稳定 */
+        margin: 0;
+        overflow: hidden;
+        /* 给底部 tips 留出空间（含 iPhone safe-area） */
+        padding: 12px 12px calc(18px + env(safe-area-inset-bottom)) 12px;
+      }
+
+      h1 {
+        margin: 10px 0;
+        font-size: 24px;
+        color: #ddd;
+      }
+
+      .controls {
+        margin-bottom: 15px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        background: #2a2a2a;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        max-width: min(96vw, 720px);
+      }
+
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: transform 0.1s, opacity 0.2s;
+        opacity: 0.7;
+        color: #fff;
+        flex: 0 0 auto;
+      }
+
+      button:hover {
+        transform: scale(1.05);
+        opacity: 1;
+      }
+      button.active {
+        opacity: 1;
+        box-shadow: 0 0 0 2px white;
+        transform: scale(1.05);
+      }
+
+      /* 元素颜色定义 */
+      .btn-sand {
+        background-color: #f6d7b0;
+        color: #5a4632;
+      }
+      .btn-water {
+        background-color: #4facfe;
+        color: #003366;
+      }
+      .btn-stone {
+        background-color: #888888;
+        color: #222;
+      }
+      .btn-acid {
+        background-color: #39ff14;
+        color: #004d00;
+      }
+      .btn-clear {
+        background-color: #ff4757;
+        color: white;
+        margin-left: 10px;
+      }
+
+      canvas {
+        border: 4px solid #444;
+        background-color: #000;
+        image-rendering: pixelated; /* 保持像素清晰，不模糊 */
+        cursor: crosshair;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        touch-action: none; /* 交互为画布绘制，避免浏览器手势 */
+      }
+
+      /* 给底部留白：用 padding-bottom 避免 margin 折叠/被 overflow 吃掉 */
+      .tips {
+        margin: 10px 0 0;
+        padding-bottom: calc(18px + env(safe-area-inset-bottom));
+        font-size: 12px;
+        color: #888;
+      }
+
+      @media (max-width: 520px) {
+        h1 {
+          font-size: 18px;
+          margin: 6px 0;
+        }
+
+        .controls {
+          gap: 8px;
+          padding: 8px;
+          margin-bottom: 10px;
+        }
+
+        button {
+          padding: 8px 12px;
+          font-size: 14px;
+        }
+
+        canvas {
+          width: min(86vw, 200px);
+          height: min(86vw, 200px);
+        }
+
+        .tips {
+          font-size: 11px;
+          text-align: center;
+        }
+      }
+
+      /* 适配“矮视口”（常见于手机端 iframe 高度较小的情况），确保 tips 不被裁切 */
+      @media (max-height: 420px) {
+        body {
+          /* 矮窗口下仍保留底部留白 */
+          padding: 8px 8px calc(14px + env(safe-area-inset-bottom)) 8px;
+          /* 内容更倾向从上往下排，避免最后一行贴底/被挤掉 */
+          justify-content: flex-start;
+        }
+
+        h1 {
+          font-size: 16px;
+          margin: 4px 0;
+        }
+
+        .controls {
+          gap: 6px;
+          padding: 6px;
+          margin-bottom: 8px;
+        }
+
+        button {
+          padding: 6px 10px;
+          font-size: 12px;
+        }
+
+        canvas {
+          /* 缩小画布，给 tips 留空间 */
+          width: min(86vw, 200px);
+          height: min(86vw, 200px);
+        }
+
+        .tips {
+          margin: 6px 0 0;
+          padding-bottom: calc(14px + env(safe-area-inset-bottom));
+          font-size: 10px;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>像素沙盘模拟器</h1>
+
+    <div class="controls">
+      <button class="btn-sand active" onclick="setMaterial(1, this)">
+        沙子 (Sand)
+      </button>
+      <button class="btn-water" onclick="setMaterial(2, this)">
+        水 (Water)
+      </button>
+      <button class="btn-stone" onclick="setMaterial(3, this)">
+        石头 (Stone)
+      </button>
+      <button class="btn-acid" onclick="setMaterial(4, this)">
+        酸液 (Acid)
+      </button>
+      <button class="btn-clear" onclick="clearCanvas()">清空画布</button>
+    </div>
+
+    <!-- 画布尺寸设为 300x300，但在CSS中可以放大显示 -->
+    <canvas id="sandCanvas" width="300" height="300"></canvas>
+
+    <div class="tips">左键涂抹 | 不同材料有不同物理特性（酸液会腐蚀石头）</div>
+
+    <script>
+      const canvas = document.getElementById("sandCanvas");
+      const ctx = canvas.getContext("2d", { alpha: false }); // 优化：关闭透明通道
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // 核心数据结构：使用一维数组存储每个像素的状态
+      // 0: 空, 1: 沙, 2: 水, 3: 石, 4: 酸
+      const numPixels = width * height;
+      let grid = new Int8Array(numPixels).fill(0);
+
+      // 渲染缓冲区 (用于直接操作像素)
+      const imgData = ctx.createImageData(width, height);
+      const buf32 = new Uint32Array(imgData.data.buffer);
+
+      // 配置
+      let currentMaterial = 1; // 默认沙子
+      let brushSize = 5;
+      let isMouseDown = false;
+      let mouseX = 0;
+      let mouseY = 0;
+
+      // 材质颜色映射 (ABGR 格式，因为 Little Endian 的 Uint32 是反的)
+      // 0xFF000000 是全黑(空)
+      const colors = {
+        0: 0xff000000, // 空
+        1: 0xffb0d7f6, // 沙 (Hex: #f6d7b0 -> R:F6, G:D7, B:B0)
+        2: 0xfffeac4f, // 水 (Hex: #4facfe -> R:4F, G:AC, B:FE)
+        3: 0xff888888, // 石
+        4: 0xff14ff39, // 酸 (Hex: #39ff14 -> R:14, G:FF, B:39)
+      };
+
+      // --- 输入处理 ---
+
+      function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return {
+          x: Math.floor((evt.clientX - rect.left) * scaleX),
+          y: Math.floor((evt.clientY - rect.top) * scaleY),
+        };
+      }
+
+      function setPointerFromClient(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        mouseX = Math.floor((clientX - rect.left) * scaleX);
+        mouseY = Math.floor((clientY - rect.top) * scaleY);
+      }
+
+      canvas.addEventListener("mousedown", (e) => {
+        isMouseDown = true;
+        const pos = getMousePos(e);
+        mouseX = pos.x;
+        mouseY = pos.y;
+      });
+
+      canvas.addEventListener("mousemove", (e) => {
+        const pos = getMousePos(e);
+        mouseX = pos.x;
+        mouseY = pos.y;
+      });
+
+      window.addEventListener("mouseup", () => {
+        isMouseDown = false;
+      });
+
+      // 移动端：触摸涂抹
+      canvas.addEventListener(
+        "touchstart",
+        (e) => {
+          if (!e.touches || !e.touches.length) return;
+          isMouseDown = true;
+          setPointerFromClient(e.touches[0].clientX, e.touches[0].clientY);
+        },
+        { passive: true }
+      );
+
+      canvas.addEventListener(
+        "touchmove",
+        (e) => {
+          if (!e.touches || !e.touches.length) return;
+          // 绘制交互优先，避免页面滚动抢手势
+          e.preventDefault();
+          setPointerFromClient(e.touches[0].clientX, e.touches[0].clientY);
+        },
+        { passive: false }
+      );
+
+      canvas.addEventListener(
+        "touchend",
+        () => {
+          isMouseDown = false;
+        },
+        { passive: true }
+      );
+
+      function setMaterial(type, btn) {
+        currentMaterial = type;
+        document
+          .querySelectorAll("button")
+          .forEach((b) => b.classList.remove("active"));
+        if (btn && !btn.classList.contains("btn-clear"))
+          btn.classList.add("active");
+      }
+
+      function clearCanvas() {
+        grid.fill(0);
+      }
+
+      // --- 核心逻辑 ---
+
+      // 检查坐标是否在画布内
+      const isEmpty = (val) => val === 0;
+
+      function getIndex(x, y) {
+        if (x < 0 || x >= width || y < 0 || y >= height) return -1;
+        return y * width + x;
+      }
+
+      // 应用材质（带随机性，模拟真实感）
+      function applyMaterial() {
+        if (!isMouseDown) return;
+
+        // 在鼠标周围随机撒点
+        const extent = Math.floor(brushSize / 2);
+        for (let i = -extent; i <= extent; i++) {
+          for (let j = -extent; j <= extent; j++) {
+            if (Math.random() > 0.5) {
+              // 50% 的几率生成，避免太整齐
+              const x = mouseX + i;
+              const y = mouseY + j;
+              if (x >= 0 && x < width && y >= 0 && y < height) {
+                const idx = getIndex(x, y);
+                // 只有是空气或者是酸液时才会被覆盖（石头和沙子可以覆盖水）
+                if (
+                  grid[idx] === 0 ||
+                  (currentMaterial !== 0 &&
+                    currentMaterial !== 2 &&
+                    grid[idx] === 2)
+                ) {
+                  // 简单的防抖动：不要覆盖同一个地方太快 (可选，这里简单处理)
+                  grid[idx] = currentMaterial;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 物理更新循环
+      function update() {
+        // 从下往上遍历！这是重力模拟的关键，防止粒子在同一帧内瞬间掉到底部
+        // 为了防止“左到右”或“右到左”的扫描偏差，我们使用随机方向或者交替方向
+        // 这里为了简单和性能，我们使用标准的遍历，但在具体逻辑里加入随机选择
+
+        for (let y = height - 1; y >= 0; y--) {
+          // 每一行随机是从左到右还是从右到左遍历？
+          // 这里使用简单的逻辑：每帧反转一个标志位
+          const rowOffset = Math.random() > 0.5 ? 1 : -1;
+
+          for (let i = 0; i < width; i++) {
+            const x = rowOffset === 1 ? i : width - 1 - i;
+            const idx = y * width + x;
+            const type = grid[idx];
+
+            if (type === 0 || type === 3) continue; // 空气和石头不动
+
+            // 获取下方、左下、右下的坐标索引
+            const belowIdx = getIndex(x, y + 1);
+            const belowLeftIdx = getIndex(x - 1, y + 1);
+            const belowRightIdx = getIndex(x + 1, y + 1);
+
+            // 左、右 (用于水和液体横向流动)
+            const leftIdx = getIndex(x - 1, y);
+            const rightIdx = getIndex(x + 1, y);
+
+            // --- 1. 沙子逻辑 (Sand) ---
+            if (type === 1) {
+              if (belowIdx !== -1 && grid[belowIdx] === 0) {
+                // 下方为空，掉落
+                grid[belowIdx] = 1;
+                grid[idx] = 0;
+              } else if (belowIdx !== -1 && grid[belowIdx] === 2) {
+                // 下方是水，沉底（交换）
+                grid[belowIdx] = 1;
+                grid[idx] = 2;
+              } else {
+                // 下方堵住了，尝试向左下或右下滚落
+                const dir = Math.random() < 0.5 ? -1 : 1;
+                const slideIdx = dir === -1 ? belowLeftIdx : belowRightIdx;
+
+                if (slideIdx !== -1 && grid[slideIdx] === 0) {
+                  grid[slideIdx] = 1;
+                  grid[idx] = 0;
+                } else if (slideIdx !== -1 && grid[slideIdx] === 2) {
+                  grid[slideIdx] = 1;
+                  grid[idx] = 2;
+                }
+              }
+            }
+
+            // --- 2. 水逻辑 (Water) ---
+            else if (type === 2) {
+              if (belowIdx !== -1 && grid[belowIdx] === 0) {
+                // 下落
+                grid[belowIdx] = 2;
+                grid[idx] = 0;
+              } else {
+                // 尝试向左下或右下
+                const dir = Math.random() < 0.5 ? -1 : 1;
+                let moved = false;
+
+                // 先试一侧，不行试另一侧
+                const target1 = dir === -1 ? belowLeftIdx : belowRightIdx;
+                if (target1 !== -1 && grid[target1] === 0) {
+                  grid[target1] = 2;
+                  grid[idx] = 0;
+                } else {
+                  const target2 = dir === -1 ? belowRightIdx : belowLeftIdx;
+                  if (target2 !== -1 && grid[target2] === 0) {
+                    grid[target2] = 2;
+                    grid[idx] = 0;
+                  } else {
+                    // 如果斜角也不行，尝试水平流动（增加速度：优先检查水平方向）
+                    // 增加水平流动概率：即使斜角被堵，也优先尝试水平扩散
+                    const sideIdx = dir === -1 ? leftIdx : rightIdx;
+                    const otherSideIdx = dir === -1 ? rightIdx : leftIdx;
+
+                    // 优先尝试随机方向，如果不行再试另一侧
+                    if (sideIdx !== -1 && grid[sideIdx] === 0) {
+                      grid[sideIdx] = 2;
+                      grid[idx] = 0;
+                    } else if (
+                      otherSideIdx !== -1 &&
+                      grid[otherSideIdx] === 0
+                    ) {
+                      grid[otherSideIdx] = 2;
+                      grid[idx] = 0;
+                    }
+                  }
+                }
+              }
+            }
+
+            // --- 3. 酸液逻辑 (Acid) ---
+            else if (type === 4) {
+              // 酸液基本运动同水，但会腐蚀接触到的非酸、非空物体
+
+              // 腐蚀检测函数（不腐蚀水和酸液本身）
+              const checkCorrosion = (targetIdx) => {
+                if (targetIdx !== -1) {
+                  const targetType = grid[targetIdx];
+                  // 不腐蚀空、酸液和水（水不能被腐蚀）
+                  if (
+                    targetType !== 0 &&
+                    targetType !== 4 &&
+                    targetType !== 2
+                  ) {
+                    // 只要有概率的腐蚀，避免瞬间消失
+                    grid[targetIdx] = 0; // 溶解目标
+                    grid[idx] = 0; // 酸液本身也消耗掉
+                    return true; // 已发生反应，停止后续移动
+                  }
+                }
+                return false;
+              };
+
+              // 检查四周 (下、左、右、上) 是否有可腐蚀物
+              if (checkCorrosion(belowIdx)) continue;
+              if (checkCorrosion(getIndex(x, y - 1))) continue; // 酸气向上
+              if (checkCorrosion(leftIdx)) continue;
+              if (checkCorrosion(rightIdx)) continue;
+
+              // 如果没有发生反应，按密度大于水的液体处理（会沉到水下面）
+              if (belowIdx !== -1 && grid[belowIdx] === 0) {
+                // 下方为空，下落
+                grid[belowIdx] = 4;
+                grid[idx] = 0;
+              } else if (belowIdx !== -1 && grid[belowIdx] === 2) {
+                // 下方是水，沉下去（交换位置，因为密度大于水）
+                grid[belowIdx] = 4;
+                grid[idx] = 2;
+              } else {
+                // 尝试向左下或右下
+                const dir = Math.random() < 0.5 ? -1 : 1;
+                const target1 = dir === -1 ? belowLeftIdx : belowRightIdx;
+                const target2 = dir === -1 ? belowRightIdx : belowLeftIdx;
+
+                // 先试一侧
+                if (target1 !== -1 && grid[target1] === 0) {
+                  grid[target1] = 4;
+                  grid[idx] = 0;
+                } else if (target1 !== -1 && grid[target1] === 2) {
+                  // 斜下方是水，沉下去
+                  grid[target1] = 4;
+                  grid[idx] = 2;
+                } else {
+                  // 试另一侧
+                  if (target2 !== -1 && grid[target2] === 0) {
+                    grid[target2] = 4;
+                    grid[idx] = 0;
+                  } else if (target2 !== -1 && grid[target2] === 2) {
+                    // 斜下方是水，沉下去
+                    grid[target2] = 4;
+                    grid[idx] = 2;
+                  } else {
+                    // 如果斜角也不行，尝试水平流动（增加速度：检查多个方向）
+                    const side = dir === -1 ? leftIdx : rightIdx;
+                    const otherSide = dir === -1 ? rightIdx : leftIdx;
+
+                    // 优先尝试随机方向，如果不行再试另一侧
+                    if (side !== -1 && grid[side] === 0) {
+                      grid[side] = 4;
+                      grid[idx] = 0;
+                    } else if (otherSide !== -1 && grid[otherSide] === 0) {
+                      grid[otherSide] = 4;
+                      grid[idx] = 0;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 渲染循环
+      function draw() {
+        // 将 grid 状态映射到 buf32 颜色缓冲区
+        // 直接遍历，因为 grid 和 buf32 长度一致
+        for (let i = 0; i < numPixels; i++) {
+          // 简单的颜色映射
+          // 这里为了防止酸液中和的闪烁，可以加一些颜色抖动逻辑，但作为基础版保持清晰
+          buf32[i] = colors[grid[i]];
+        }
+        ctx.putImageData(imgData, 0, 0);
+      }
+
+      // 主循环
+      function loop() {
+        applyMaterial(); // 处理鼠标输入
+        update(); // 计算物理
+        draw(); // 渲染画面
+        requestAnimationFrame(loop);
+      }
+
+      // 启动
+      loop();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>仿生鸟群/鱼群模拟 (Boids + 掠食者)</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0f172a; /* 深色背景 */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        canvas {
+            display: block;
+            touch-action: none; /* 移动端：画布交互优先，避免滚动手势 */
+        }
+        #controls {
+            position: absolute;
+            top: calc(12px + env(safe-area-inset-top));
+            left: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            pointer-events: none; /* 让鼠标事件穿透到 Canvas */
+            user-select: none;
+            max-width: min(92vw, 360px);
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+        p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+        .highlight {
+            color: #ff00de;
+            font-weight: bold;
+        }
+
+        /* 小屏/矮屏：缩小信息面板，避免遮挡太多画面 */
+        @media (max-width: 520px) {
+            #controls {
+                padding: 10px 12px;
+                border-radius: 10px;
+            }
+
+            h1 {
+                font-size: 1rem;
+                margin-bottom: 8px;
+            }
+
+            p {
+                font-size: 0.82rem;
+            }
+
+            #controls ul {
+                padding-left: 18px !important;
+            }
+        }
+
+        /* 矮高度（常见于手机端 iframe）：进一步压缩，让画面更完整 */
+        @media (max-height: 420px) {
+            #controls {
+                padding: 8px 10px;
+                max-width: min(92vw, 320px);
+            }
+
+            p {
+                margin: 4px 0;
+            }
+
+            #controls ul {
+                margin: 4px 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="controls">
+        <h1>Boids 模拟器</h1>
+        <p>个体数量: <span id="count">0</span></p>
+        <p>移动鼠标以驱散群体 (掠食者模式)</p>
+        <p class="highlight">核心参数 (可在代码中调整):</p>
+        <ul style="padding-left: 20px; margin: 5px 0;">
+            <li>感知半径: <span id="val-r">50</span></li>
+            <li>最大速度: <span id="val-max">4</span></li>
+            <li>最大力: <span id="val-maxf">0.1</span></li>
+        </ul>
+    </div>
+
+    <canvas id="boidsCanvas"></canvas>
+
+<script>
+/**
+ * 算法参数配置
+ * 您可以在这里调整规则的权重和物理限制
+ */
+const CONFIG = {
+    count: 150,             // 个体数量
+    perceptionRadius: 50,   // 感知半径 (Separation, Alignment, Cohesion 生效距离)
+    maxSpeed: 4,            // 个体最大移动速度
+    maxForce: 0.1,          // 转向力最大值 (越小转向越平滑，越大反应越快)
+    
+    // 权重系数 (分离通常需要比对齐和凝聚更大的权重以避免重叠)
+    separationWeight: 2.0,  // 分离权重
+    alignmentWeight: 1.0,   // 对齐权重
+    cohesionWeight: 1.0,    // 凝聚权重
+    
+    // 掠食者(鼠标)参数
+    predatorRadius: 150,    // 鼠标影响范围
+    predatorForce: 5.0      // 惊吓逃逸力度
+};
+
+// 向量工具类 (为了性能直接写在逻辑里，但为了可读性提取在此)
+class Vector {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+    add(v) { this.x += v.x; this.y += v.y; return this; }
+    sub(v) { this.x -= v.x; this.y -= v.y; return this; }
+    mult(n) { this.x *= n; this.y *= n; return this; }
+    div(n) { this.x /= n; this.y /= n; return this; }
+    mag() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+    setMag(n) { return this.normalize().mult(n); }
+    normalize() {
+        let m = this.mag();
+        if (m !== 0) this.div(m);
+        return this;
+    }
+    limit(max) {
+        if (this.mag() > max) this.normalize().mult(max);
+        return this;
+    }
+    static dist(v1, v2) {
+        return Math.sqrt((v1.x - v2.x)**2 + (v1.y - v2.y)**2);
+    }
+}
+
+// Boid (个体) 类
+class Boid {
+    constructor(x, y) {
+        this.position = new Vector(x, y);
+        // 随机初始速度
+        let angle = Math.random() * Math.PI * 2;
+        this.velocity = new Vector(Math.cos(angle), Math.sin(angle));
+        this.acceleration = new Vector(0, 0);
+        
+        // 外观属性
+        this.hue = Math.random() * 60 + 180; // 蓝色到青色范围
+    }
+
+    // 核心算法：计算行为
+    flock(boids, mousePos) {
+        let separation = new Vector(0, 0);
+        let alignment = new Vector(0, 0);
+        let cohesion = new Vector(0, 0);
+        let total = 0;
+
+        for (let other of boids) {
+            if (other === this) continue;
+
+            let d = Vector.dist(this.position, other.position);
+            
+            // 只有在感知半径内的邻居才会被计算
+            if (d < CONFIG.perceptionRadius) {
+                // 1. 分离 (Separation): 远离太近的邻居
+                let diff = new Vector(this.position.x, this.position.y);
+                diff.sub(other.position);
+                diff.div(d * d); // 距离越近，斥力越大
+                separation.add(diff);
+
+                // 2. 对齐 (Alignment): 累加邻居的速度
+                alignment.add(other.velocity);
+
+                // 3. 凝聚 (Cohesion): 累加邻居的位置
+                cohesion.add(other.position);
+
+                total++;
+            }
+        }
+
+        if (total > 0) {
+            // 平均化并计算转向力 (Steering Force = Desired - Velocity)
+            
+            // 对齐处理
+            alignment.div(total);
+            alignment.setMag(CONFIG.maxSpeed);
+            alignment.sub(this.velocity);
+            alignment.limit(CONFIG.maxForce);
+
+            // 凝聚处理
+            cohesion.div(total); // 得到邻居的平均位置（重心）
+            cohesion.sub(this.position); // 得到指向重心的向量
+            cohesion.setMag(CONFIG.maxSpeed);
+            cohesion.sub(this.velocity);
+            cohesion.limit(CONFIG.maxForce);
+            
+            // 分离处理 (Separation通常不需要除以total，因为是累加的斥力)
+            separation.setMag(CONFIG.maxSpeed);
+            separation.sub(this.velocity);
+            separation.limit(CONFIG.maxForce);
+        }
+
+        // 4. 躲避掠食者 (鼠标)
+        let predatorForce = new Vector(0, 0);
+        let dPredator = Vector.dist(this.position, mousePos);
+        if (dPredator < CONFIG.predatorRadius) {
+            let diff = new Vector(this.position.x, this.position.y);
+            diff.sub(mousePos); // 远离鼠标
+            diff.setMag(CONFIG.maxSpeed);
+            diff.sub(this.velocity);
+            diff.limit(CONFIG.maxForce * 2); // 惊吓时的力更大
+            predatorForce = diff;
+        }
+
+        // 应用加权
+        separation.mult(CONFIG.separationWeight);
+        alignment.mult(CONFIG.alignmentWeight);
+        cohesion.mult(CONFIG.cohesionWeight);
+        predatorForce.mult(CONFIG.predatorForce);
+
+        this.acceleration.add(separation);
+        this.acceleration.add(alignment);
+        this.acceleration.add(cohesion);
+        this.acceleration.add(predatorForce);
+    }
+
+    update() {
+        this.position.add(this.velocity);
+        this.velocity.add(this.acceleration);
+        this.velocity.limit(CONFIG.maxSpeed);
+        this.acceleration.mult(0); // 重置加速度
+    }
+
+    // 边界处理：穿墙 (Toroidal space)
+    edges(width, height) {
+        if (this.position.x > width) this.position.x = 0;
+        else if (this.position.x < 0) this.position.x = width;
+        if (this.position.y > height) this.position.y = 0;
+        else if (this.position.y < 0) this.position.y = height;
+    }
+
+    draw(ctx) {
+        let angle = Math.atan2(this.velocity.y, this.velocity.x);
+        
+        ctx.save();
+        ctx.translate(this.position.x, this.position.y);
+        ctx.rotate(angle);
+        
+        // 绘制三角形
+        ctx.beginPath();
+        ctx.moveTo(10, 0);    // 头部
+        ctx.lineTo(-6, 5);    // 尾翼左
+        ctx.lineTo(-3, 0);    // 尾部凹槽中心
+        ctx.lineTo(-6, -5);   // 尾翼右
+        ctx.closePath();
+        
+        ctx.fillStyle = `hsl(${this.hue}, 100%, 50%)`;
+        ctx.globalCompositeOperation = 'lighter'; // 荧光叠加效果
+        ctx.fill();
+        
+        ctx.restore();
+    }
+}
+
+// 主程序
+const canvas = document.getElementById('boidsCanvas');
+const ctx = canvas.getContext('2d');
+const mousePos = new Vector(-1000, -1000); // 初始鼠标在屏幕外
+
+// UI 更新
+document.getElementById('count').innerText = CONFIG.count;
+document.getElementById('val-r').innerText = CONFIG.perceptionRadius;
+document.getElementById('val-max').innerText = CONFIG.maxSpeed;
+document.getElementById('val-maxf').innerText = CONFIG.maxForce;
+
+let boids = [];
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+function init() {
+    resize();
+    for (let i = 0; i < CONFIG.count; i++) {
+        boids.push(new Boid(Math.random() * canvas.width, Math.random() * canvas.height));
+    }
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    // 绘制背景 (带有透明度以产生拖尾效果)
+    // 荧光效果需要黑色背景，拖尾通过不完全清除上一帧实现
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.2)'; // 深蓝背景，0.2的透明度制造拖尾
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let boid of boids) {
+        // 边缘检测
+        boid.edges(canvas.width, canvas.height);
+        // 计算群聚行为
+        boid.flock(boids, mousePos);
+        // 更新物理状态
+        boid.update();
+        // 绘制
+        boid.draw(ctx);
+    }
+    
+    // 绘制鼠标位置 (掠食者光环)
+    if (mousePos.x > 0) {
+        ctx.beginPath();
+        ctx.arc(mousePos.x, mousePos.y, 20, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 0, 222, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(mousePos.x, mousePos.y, CONFIG.predatorRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 0, 222, 0.1)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+}
+
+// 事件监听
+window.addEventListener('resize', resize);
+window.addEventListener('mousemove', (e) => {
+    mousePos.x = e.clientX;
+    mousePos.y = e.clientY;
+});
+// 移动端：触摸/拖动也作为“掠食者”位置
+window.addEventListener('touchstart', (e) => {
+    if (!e.touches || !e.touches.length) return;
+    mousePos.x = e.touches[0].clientX;
+    mousePos.y = e.touches[0].clientY;
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (!e.touches || !e.touches.length) return;
+    e.preventDefault();
+    mousePos.x = e.touches[0].clientX;
+    mousePos.y = e.touches[0].clientY;
+}, { passive: false });
+
+window.addEventListener('touchend', () => {
+    mousePos.x = -1000;
+    mousePos.y = -1000;
+}, { passive: true });
+
+// 鼠标移出窗口时移除威胁
+window.addEventListener('mouseout', () => {
+    mousePos.x = -1000;
+    mousePos.y = -1000;
+});
+
+// 启动
+init();
+animate();
+
+</script>
+</body>
+</html>
