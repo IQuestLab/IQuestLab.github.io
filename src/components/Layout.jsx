@@ -9,10 +9,11 @@ const navLinkClassName = ({ isActive }) => {
 
 export default function Layout() {
   const { lang, toggleLang, t } = useLanguage();
-  const startYear = 2025;
+  const startYear = 2026;
   const currentYear = new Date().getFullYear();
+  const endYear = Math.max(currentYear, startYear);
   const yearText =
-    currentYear > startYear ? `${startYear}–${currentYear}` : `${startYear}`;
+    endYear > startYear ? `${startYear}–${endYear}` : `${startYear}`;
 
   return (
     <div className="layout-shell">
