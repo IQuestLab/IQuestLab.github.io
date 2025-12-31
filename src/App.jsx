@@ -24,11 +24,6 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
-        <Route path="/report" element={<SimplePage titleKey="page_report" />} />
-        <Route
-          path="/download"
-          element={<SimplePage titleKey="page_download" />}
-        />
         <Route
           path="/contact"
           element={

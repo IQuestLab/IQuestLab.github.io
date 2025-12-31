@@ -236,10 +236,15 @@ export default function HomePage() {
               {t("cta_download")}
               <FiDownload className="btn-icon" size={16} aria-hidden="true" />
             </a>
-            <Link className="btn btn-secondary" to="/report">
+            <a
+              className="btn btn-secondary"
+              href="https://github.com/IQuestLab/IQuest-Coder-V1/blob/main/papers/IQuest_Coder_Technical_Report.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {t("cta_report")}
               <FiFileText className="btn-icon" size={16} aria-hidden="true" />
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -368,7 +373,7 @@ export default function HomePage() {
           <p>{t("home_benchmark_desc")}</p>
           <div className="media-wrap" data-reveal>
             <img
-              src={assetUrl("images/benchmark.jpg")}
+              src={assetUrl("images/benchmark.png")}
               alt={t("home_benchmark_image_alt")}
             />
           </div>

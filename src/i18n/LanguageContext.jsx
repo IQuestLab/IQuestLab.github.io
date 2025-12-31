@@ -13,10 +13,6 @@ const DICT = {
     nav_home_aria: "IQuest 首页",
     nav_logo_alt: "IQuest 标志",
     nav_contact: "联系我们",
-    nav_report: "技术报告",
-    nav_download: "模型下载",
-    page_report: "技术报告",
-    page_download: "模型下载",
     page_contact: "联系我们",
     not_found_title: "页面不存在",
     not_found_body: "你访问的页面不存在。",
@@ -160,10 +156,6 @@ const DICT = {
     nav_home_aria: "IQuest Home",
     nav_logo_alt: "IQuest logo",
     nav_contact: "Contact",
-    nav_report: "Report",
-    nav_download: "Download",
-    page_report: "Report",
-    page_download: "Download",
     page_contact: "Contact",
     not_found_title: "Page not found",
     not_found_body: "The page you requested does not exist.",
@@ -317,7 +309,7 @@ const DICT = {
 };
 
 const LanguageContext = createContext({
-  lang: "zh",
+  lang: "en",
   setLang: () => {},
   toggleLang: () => {},
   t: (key) => key,
@@ -325,9 +317,10 @@ const LanguageContext = createContext({
 
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(() => {
-    if (typeof window === "undefined") return "zh";
+    // 默认展示英文；若用户曾手动切换，则优先使用本地存储中的选择
+    if (typeof window === "undefined") return "en";
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    return saved === "en" || saved === "zh" ? saved : "zh";
+    return saved === "en" || saved === "zh" ? saved : "en";
   });
 
   useEffect(() => {
