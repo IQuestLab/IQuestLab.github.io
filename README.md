@@ -9,7 +9,6 @@
 ### 1）本地构建并发布到 gh-pages 分支
 
 ```bash
-cd /Users/ycai/project/iquest-home
 npm run build
 npm run deploy
 ```
