@@ -194,10 +194,10 @@ const DICT = {
       "Two post-training tracks: Thinking (reasoning-focused) and Instruct (general assistance).",
     home_feature_loop_title: "Loop Architecture",
     home_feature_loop_desc:
-      "With the Loop architecture, compared to models with similar compute cost, VRAM and KV cache usage are significantly reduced while throughput is greatly improved.",
+      "With the Loop architecture, compared to models with similar compute cost, HBM and KV Cache overhead are significantly reduced while throughput is greatly improved.",
     home_feature_deploy_title: "Efficient Deployment",
     home_feature_deploy_desc:
-      "Base/Loop versions run on a single H20; the int4 version can be deployed on a single consumer GPU such as 3090/4090.",
+      "Base/Loop version: Supports single-card H20 inference; Int4 version: Deployable on a single consumer-grade 3090/4090 GPU.",
     home_feature_cost_title: "Cost Optimization",
     home_feature_cost_desc:
       "With only ~5% additional training cost, the Loop architecture unlocks much higher performance—reaching the level of hundreds-of-billions-parameter MoE models and reshaping the Pareto frontier.",
@@ -226,7 +226,7 @@ const DICT = {
       "With the Loop architecture, LoopCoder significantly raises the performance ceiling while keeping the same VRAM footprint.",
     home_loop_intro_2:
       "The comparison below shows LoopCoder’s advantage over dense models on the same task.",
-    home_loop_benefit1_title: "Lower VRAM Usage",
+    home_loop_benefit1_title: "Lower HBM Overhead",
     home_loop_benefit1_desc:
       "Parameter sharing in the Loop structure substantially reduces memory requirements.",
     home_loop_benefit2_title: "Higher Deployment Efficiency",
