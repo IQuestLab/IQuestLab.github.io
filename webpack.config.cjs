@@ -50,6 +50,17 @@ module.exports = (env, argv) => {
             // public 下的内容都要原样可访问：/images/*、/demo/*、/style.css
             noErrorOnMissing: true,
           },
+          {
+            from: path.resolve(
+              __dirname,
+              "c952af0ffb79dabbf56fa8e837213e97.txt"
+            ),
+            to: path.resolve(
+              __dirname,
+              "dist/c952af0ffb79dabbf56fa8e837213e97.txt"
+            ),
+            noErrorOnMissing: true,
+          },
         ],
       }),
     ],
