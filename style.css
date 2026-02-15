@@ -209,7 +209,9 @@ body {
   position: fixed;
   top: 0;
   width: 100%;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border);
   z-index: 100;
   height: 78px;
@@ -413,20 +415,6 @@ html[lang="en"] .hero .subtitle {
 
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 1);
-}
-
-.btn-version-pill {
-  background: rgba(0, 60, 132, 1);
-  color: #ffffff;
-  border-color: rgba(0, 60, 132, 1);
-  box-shadow: 0 10px 24px rgba(0, 60, 132, 0.32);
-  font-weight: 600;
-}
-
-.btn-version-pill:hover {
-  background: rgba(0, 48, 106, 1);
-  border-color: rgba(0, 48, 106, 1);
-  box-shadow: 0 14px 30px rgba(0, 48, 106, 0.38);
 }
 
 .simple-page-actions {
