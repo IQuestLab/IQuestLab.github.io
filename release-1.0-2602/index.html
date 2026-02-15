@@ -15,22 +15,23 @@
         }
 
         :root {
-            --primary-color: #00ffff;
-            --bg-dark: #0a0e27;
-            --bg-darker: #050810;
+            --primary-color: #181e25;
+            --bg-dark: #ffffff;
+            --bg-darker: #ffffff;
             --bg-light: #f7f8fa;
-            --bg-card: rgba(255, 255, 255, 0.03);
-            --border-color: rgba(0, 255, 255, 0.2);
-            --text-dark: #181e25;
-            --text-primary: #ffffff;
-            --text-secondary: rgba(255, 255, 255, 0.85);
-            --text-muted: rgba(255, 255, 255, 0.6);
-            --accent-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --bg-card: rgba(255, 255, 255, 0.88);
+            --border-color: #dee2e9;
+            --text-primary: #181e25;
+            --text-secondary: #666666;
+            --text-muted: #8f97a3;
+            --accent-gradient: linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%);
+            --shadow-soft: 0 18px 45px rgba(17, 24, 39, 0.08);
+            --shadow-lift: 0 28px 80px rgba(17, 24, 39, 0.14);
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg-darker);
+            background-color: var(--bg-darker);
             color: var(--text-secondary);
             line-height: 1.6;
             overflow-x: hidden;
@@ -44,71 +45,69 @@
 
         /* Header */
         header {
-            background: var(--bg-dark);
+            background: #ffffff;
             border-bottom: 1px solid var(--border-color);
-            padding: 1.5rem 0;
+            height: 78px;
+            padding: 0;
             position: sticky;
             top: 0;
             z-index: 100;
-            backdrop-filter: blur(10px);
+        }
+
+        header .container {
+            max-width: 1920px;
+            padding: 0 60px;
+            height: 100%;
         }
 
         .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
+            flex-wrap: nowrap;
+            gap: 0;
+            height: 100%;
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
             text-decoration: none;
-            color: var(--text-primary);
+            margin-right: auto;
         }
 
-        .logo-text {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary-color), #00ccff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .logo-image {
+            height: 75px;
+            width: auto;
+            display: block;
         }
 
         .header-links {
             display: flex;
-            gap: 1.5rem;
+            gap: 12px;
             align-items: center;
         }
 
         .header-link {
-            color: var(--text-secondary);
+            color: var(--text-primary);
             text-decoration: none;
-            font-size: 0.95rem;
-            transition: color 0.3s ease;
+            font-size: 16px;
+            font-weight: 400;
+            padding: 8px 16px;
+            border-radius: 32px;
+            transition: color 0.3s ease, background-color 0.2s ease;
         }
 
         .header-link:hover {
-            color: var(--primary-color);
-        }
-
-        .header-link-btn {
-            background: transparent;
-            border: none;
-            padding: 0;
-            font: inherit;
-            line-height: inherit;
-            cursor: pointer;
+            color: var(--text-primary);
+            background: var(--bg-light);
         }
 
         .nav-lang-toggle {
             padding: 8px 14px;
             border-radius: 32px;
-            border: 1px solid rgba(0, 255, 255, 0.25);
-            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(24, 30, 37, 0.12);
+            background: rgba(255, 255, 255, 0.7);
             color: var(--text-primary);
             font-size: 14px;
             font-weight: 500;
@@ -119,8 +118,8 @@
         }
 
         .nav-lang-toggle:hover {
-            background: rgba(0, 255, 255, 0.14);
-            border-color: rgba(0, 255, 255, 0.45);
+            background: var(--bg-light);
+            border-color: rgba(24, 30, 37, 0.18);
         }
 
         .nav-lang-toggle:active {
@@ -128,38 +127,41 @@
         }
 
         .btn {
-            padding: 0.6rem 1.5rem;
-            border-radius: 6px;
+            height: 44px;
+            padding: 0 1.1rem;
+            border-radius: 999px;
             text-decoration: none;
             font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
             border: 1px solid;
         }
 
         .btn-primary {
             background: var(--primary-color);
-            color: var(--bg-dark);
+            color: #ffffff;
             border-color: var(--primary-color);
+            box-shadow: 0 14px 32px rgba(17, 24, 39, 0.18);
         }
 
         .btn-primary:hover {
-            background: #00ccff;
+            background: #0f1319;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 255, 255, 0.3);
+            box-shadow: 0 18px 44px rgba(17, 24, 39, 0.24);
         }
 
         .btn-secondary {
-            background: transparent;
-            color: var(--primary-color);
-            border-color: var(--primary-color);
+            background: rgba(255, 255, 255, 0.85);
+            color: var(--text-primary);
+            border-color: var(--border-color);
         }
 
         .btn-secondary:hover {
-            background: rgba(0, 255, 255, 0.1);
+            background: #ffffff;
         }
 
         /* Hero Section */
@@ -188,15 +190,16 @@
         }
 
         .hero h1 {
-            font-size: 3rem;
+            font-size: 2.2rem;
             font-weight: 800;
             color: var(--text-primary);
             margin-bottom: 1.5rem;
             line-height: 1.2;
+            white-space: nowrap;
         }
 
         .hero h1 .highlight {
-            background: linear-gradient(135deg, var(--primary-color), #00ccff);
+            background: linear-gradient(135deg, #181e25, #2f8cff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -242,7 +245,7 @@
         }
 
         section:nth-child(even) {
-            background: var(--bg-dark);
+            background: var(--bg-light);
         }
 
         .section-title {
@@ -277,14 +280,16 @@
         .feature-card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 2rem;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-soft);
         }
 
         .feature-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 32px rgba(0, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lift);
             border-color: var(--primary-color);
         }
 
@@ -325,15 +330,16 @@
         .table-wrapper {
             overflow-x: auto;
             margin: 2rem 0;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+            border-radius: 14px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             background: var(--bg-card);
-            border: 1px solid var(--border-color);
+            border: none;
         }
 
         thead {
@@ -383,7 +389,9 @@
             padding: 1.25rem;
             border: 1px solid var(--border-color);
             border-radius: 14px;
-            background: rgba(255, 255, 255, 0.02);
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-soft);
         }
 
         .demo-header {
@@ -413,10 +421,10 @@
 
         .demo-iframe-container {
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
             background: #000;
-            box-shadow: 0 12px 32px rgba(0, 255, 255, 0.1);
+            box-shadow: var(--shadow-soft);
         }
 
         .demo-iframe {
@@ -441,16 +449,18 @@
         .video-card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
             transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-soft);
         }
 
         .video-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 32px rgba(0, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lift);
             border-color: var(--primary-color);
         }
 
@@ -490,15 +500,16 @@
             margin: 1.5rem 0 1rem;
             padding: 0.85rem;
             background: var(--bg-card);
-            border-radius: 12px;
+            border-radius: 14px;
             border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
         }
 
         .video-tab {
             padding: 0.55rem 0.95rem;
-            background: transparent;
+            background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 999px;
             color: var(--text-secondary);
             cursor: pointer;
             font-size: 0.86rem;
@@ -512,39 +523,25 @@
         }
 
         .video-tab.active {
-            background: var(--primary-color);
-            color: var(--bg-dark);
+            background: rgba(0, 255, 255, 0.16);
+            color: var(--text-primary);
             border-color: var(--primary-color);
         }
 
         /* Highlights Section */
         .highlights {
-            background: var(--accent-gradient);
+            background: var(--bg-light);
         }
 
-        .highlights-list {
-            list-style: none;
-            max-width: 900px;
-            margin: 0 auto;
+        .highlights-grid {
+            margin: 2rem 0 0;
         }
 
-        .highlights-list li {
-            padding: 1.25rem 0;
-            padding-left: 2.5rem;
-            position: relative;
-            line-height: 1.8;
+        .highlights-grid .feature-card {
+            height: 100%;
         }
 
-        .highlights-list li::before {
-            content: '✓';
-            position: absolute;
-            left: 0;
-            color: var(--primary-color);
-            font-weight: bold;
-            font-size: 1.3rem;
-        }
-
-        .highlights-list strong {
+        .highlights-grid .feature-desc strong {
             color: var(--text-primary);
         }
 
@@ -580,29 +577,209 @@
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2rem;
+        @media (max-width: 1024px) {
+            .container {
+                padding: 0 1.25rem;
             }
 
-            .hero-subtitle {
-                font-size: 1.1rem;
+            .hero {
+                padding: 4rem 0;
+            }
+
+            section {
+                padding: 4rem 0;
             }
 
             .section-title {
-                font-size: 2rem;
+                font-size: 2.1rem;
+            }
+
+            .header-links {
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .video-tabs {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .section-intro-no-wrap {
+                white-space: normal;
+            }
+
+            .hero h1 {
+                white-space: normal;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                height: auto;
+                padding: 1rem 0;
+            }
+
+            .container {
+                padding: 0 0.9rem;
+            }
+
+            header .container {
+                padding: 0 20px;
+            }
+
+            .header-content {
+                align-items: flex-start;
+                flex-wrap: wrap;
+                gap: 0.75rem;
+            }
+
+            .logo-image {
+                height: 48px;
+            }
+
+            .header-links {
+                width: 100%;
+                justify-content: flex-start;
+                gap: 0.55rem 0.85rem;
+            }
+
+            .header-link {
+                font-size: 14px;
+                padding: 7px 12px;
+            }
+
+            .hero h1 {
+                font-size: 1.75rem;
+                line-height: 1.3;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1.75rem;
+            }
+
+            .section-intro {
+                font-size: 1rem;
+                margin: 0 auto 2rem;
+                line-height: 1.7;
             }
 
             .subsection-title {
-                font-size: 1.5rem;
+                font-size: 1.3rem;
+                margin: 2.5rem 0 1rem;
             }
 
-            .feature-grid {
-                grid-template-columns: 1fr;
-            }
-
+            .feature-grid,
             .video-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .feature-card {
+                padding: 1.2rem;
+            }
+
+            .video-tabs {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                padding: 0.65rem;
+                gap: 0.45rem;
+            }
+
+            .video-tab {
+                width: 100%;
+                padding: 0.5rem 0.55rem;
+                font-size: 0.8rem;
+                white-space: nowrap;
+            }
+
+            .video-info {
+                min-height: auto;
+                padding: 1rem;
+            }
+
+            .demo-showcase {
+                padding: 0.8rem;
+                border-radius: 10px;
+            }
+
+            .demo-prompt {
+                font-size: 0.86rem;
+                padding-left: 0.75rem;
+            }
+
+            .hero-actions .btn {
+                width: 100%;
+                justify-content: center;
+                max-width: 320px;
+            }
+
+            .table-wrapper {
+                margin: 1rem 0;
+            }
+
+            table {
+                font-size: 0.74rem;
+            }
+
+            th, td {
+                padding: 0.5rem 0.4rem;
+            }
+
+            section {
+                padding: 3rem 0;
+            }
+
+            .demo-iframe {
+                height: 320px;
+            }
+
+            .demo-iframe.tall {
+                height: 420px;
+            }
+
+            .footer-links {
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 0.75rem;
+            }
+
+            header .container {
+                padding: 0 14px;
+            }
+
+            .logo-image {
+                height: 40px;
+            }
+
+            .header-links {
+                gap: 0.45rem 0.65rem;
+            }
+
+            .header-link {
+                font-size: 13px;
+                padding: 6px 10px;
+            }
+
+            .hero {
+                padding: 3rem 0;
+            }
+
+            .hero h1 {
+                font-size: 1.45rem;
+            }
+
+            .section-title {
+                font-size: 1.45rem;
+            }
+
+            .section-intro {
+                font-size: 0.92rem;
             }
 
             .video-tabs {
@@ -610,40 +787,27 @@
             }
 
             .video-tab {
-                width: 100%;
-            }
-
-            .demo-showcase {
-                padding: 0.85rem;
+                font-size: 0.82rem;
             }
 
             table {
-                font-size: 0.75rem;
+                font-size: 0.68rem;
             }
 
             th, td {
-                padding: 0.5rem 0.4rem;
-            }
-
-            .container {
-                padding: 0 1rem;
-            }
-
-            section {
-                padding: 3rem 0;
-            }
-
-            .header-links {
-                width: 100%;
-                justify-content: center;
+                padding: 0.45rem 0.35rem;
             }
 
             .demo-iframe {
-                height: 400px;
+                height: 260px;
             }
 
             .demo-iframe.tall {
-                height: 500px;
+                height: 340px;
+            }
+
+            .highlights-grid {
+                margin-top: 1.5rem;
             }
         }
 
@@ -672,11 +836,11 @@
     <header>
         <div class="container">
             <div class="header-content">
-                <a href="#" class="logo">
-                    <div class="logo-text">IQuest Coder</div>
+                <a href="../" class="logo" aria-label="Back to Home">
+                    <img src="../images/logo-full.jpg" alt="IQuest logo" class="logo-image" onerror="this.onerror=null;this.src='../images/iquest.svg';" />
                 </a>
                 <div class="header-links">
-                    <button id="lang-toggle-btn" type="button" class="header-link header-link-btn">中 / EN</button>
+                    <button id="lang-toggle-btn" type="button" class="nav-lang-toggle">中 / EN</button>
                     <a href="https://github.com/IQuestLab/IQuest-Coder-V1" class="header-link" target="_blank">GitHub</a>
                     <a href="https://huggingface.co/IQuestLab" class="header-link" target="_blank">Hugging Face</a>
                     <a href="https://github.com/IQuestLab/IQuest-Coder-V1/blob/main/papers/IQuest_Coder_Technical_Report.pdf" class="header-link" target="_blank" data-i18n="technical_report">Technical Report</a>
@@ -786,29 +950,43 @@
                 A new family of code large language models (LLMs) designed to advance autonomous software engineering and code intelligence.
             </p>
 
-            <ul class="highlights-list">
-                <li data-i18n="highlights_item1">
-                    <strong>State-of-the-Art Performance:</strong> Achieves leading results on SWE-Bench Verified, BigCodeBench, LiveCodeBench v6, and other major coding benchmarks, surpassing competitive models across agentic software engineering, competitive programming, and complex tool use.
-                </li>
-                <li data-i18n="highlights_item2">
-                    <strong>Code-Flow Training Paradigm:</strong> Moving beyond static code representations, our models learn from repository evolution patterns, commit transitions, and dynamic code transformations to understand real-world software development processes.
-                </li>
-                <li data-i18n="highlights_item3">
-                    <strong>Dual Specialization Paths:</strong> Bifurcated post-training delivers two specialized variants—Thinking models (utilizing reasoning-driven RL for complex problem-solving) and Instruct models (optimized for general coding assistance and instruction-following).
-                </li>
-                <li data-i18n="highlights_item4">
-                    <strong>Efficient Architecture:</strong> The IQuest-Coder-V1-Loop variant introduces a recurrent mechanism that optimizes the trade-off between model capacity and deployment footprint. The 7B and 14B models adopt shallow architectures for faster inference speed.
-                </li>
-                <li data-i18n="highlights_item5">
-                    <strong>Native Long Context:</strong> All models natively support up to 128K tokens without requiring additional scaling techniques.
-                </li>
-                <li data-i18n="highlights_item6">
-                    <strong>CLI Agent Integration:</strong> Demonstrates initial deployment capabilities on ClaudeCode and OpenCode platforms, with the ability to integrate into CLI-based agent workflows.
-                </li>
-                <li data-i18n="highlights_item7">
-                    <strong>HTML and SVG Generation:</strong> Features preliminary support for HTML webpage and SVG graphics code generation.
-                </li>
-            </ul>
+            <div class="feature-grid highlights-grid">
+                <article class="feature-card">
+                    <p class="feature-desc" data-i18n="highlights_item1">
+                        <strong>State-of-the-Art Performance:</strong> Achieves leading results on SWE-Bench Verified, BigCodeBench, LiveCodeBench v6, and other major coding benchmarks, surpassing competitive models across agentic software engineering, competitive programming, and complex tool use.
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <p class="feature-desc" data-i18n="highlights_item2">
+                        <strong>Code-Flow Training Paradigm:</strong> Moving beyond static code representations, our models learn from repository evolution patterns, commit transitions, and dynamic code transformations to understand real-world software development processes.
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <p class="feature-desc" data-i18n="highlights_item3">
+                        <strong>Dual Specialization Paths:</strong> Bifurcated post-training delivers two specialized variants—Thinking models (utilizing reasoning-driven RL for complex problem-solving) and Instruct models (optimized for general coding assistance and instruction-following).
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <p class="feature-desc" data-i18n="highlights_item4">
+                        <strong>Efficient Architecture:</strong> The IQuest-Coder-V1-Loop variant introduces a recurrent mechanism that optimizes the trade-off between model capacity and deployment footprint. The 7B and 14B models adopt shallow architectures for faster inference speed.
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <p class="feature-desc" data-i18n="highlights_item5">
+                        <strong>Native Long Context:</strong> All models natively support up to 128K tokens without requiring additional scaling techniques.
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <p class="feature-desc" data-i18n="highlights_item6">
+                        <strong>CLI Agent Integration:</strong> Demonstrates initial deployment capabilities on ClaudeCode and OpenCode platforms, with the ability to integrate into CLI-based agent workflows.
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <p class="feature-desc" data-i18n="highlights_item7">
+                        <strong>HTML and SVG Generation:</strong> Features preliminary support for HTML webpage and SVG graphics code generation.
+                    </p>
+                </article>
+            </div>
         </div>
     </section>
 
@@ -1510,13 +1688,8 @@
     <!-- Footer -->
     <footer>
         <div class="container">
-            <div class="footer-links">
-                <a href="https://github.com/IQuestLab/IQuest-Coder-V1" class="footer-link" target="_blank">GitHub</a>
-                <a href="https://huggingface.co/IQuestLab" class="footer-link" target="_blank">Hugging Face</a>
-                <a href="https://github.com/IQuestLab/IQuest-Coder-V1/blob/main/papers/IQuest_Coder_Technical_Report.pdf" class="footer-link" target="_blank" data-i18n="footer_technical_report">Technical Report</a>
-            </div>
             <p class="copyright" data-i18n="footer_copyright">
-                © 2025 IQuest Coder Group. All rights reserved. | Built with ❤️ by the IQuest Research Team
+                © 2026 IQuest Coder Group. All rights reserved.
             </p>
         </div>
     </footer>
@@ -1583,7 +1756,7 @@
                 cli_demo5_model: "OpenClaw Demo",
                 cli_demo5_desc: "Real-world computer use automation with Claude Code API",
                 footer_technical_report: "Technical Report",
-                footer_copyright: "© 2025 IQuest Coder Group. All rights reserved. | Built with ❤️ by the IQuest Research Team",
+                footer_copyright: "© 2026 IQuest Coder Group. All rights reserved.",
                 html_demos_title: "HTML Demos: Single-File Web Applications",
                 html_demo1_title: "Demo 1: Neon Pixel Runner Game",
                 html_demo2_title: "Demo 2: Neural Network Visualization (Three.js)",
@@ -1670,7 +1843,7 @@
                 cli_demo5_model: "OpenClaw 演示",
                 cli_demo5_desc: "基于 Claude Code API 的真实场景计算机自动化",
                 footer_technical_report: "技术报告",
-                footer_copyright: "© 2025 IQuest Coder Group。保留所有权利。| 由 IQuest 研究团队用 ❤️ 构建",
+                footer_copyright: "© 2026 IQuest Coder Group. 保留所有权利。",
                 html_demos_title: "HTML 演示：单文件 Web 应用",
                 html_demo1_title: "演示 1：霓虹像素跑酷游戏",
                 html_demo2_title: "演示 2：神经网络可视化（Three.js）",
