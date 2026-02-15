@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IQuest-Coder-V1: Releasing 7B/14B Family Models and 40B-Thinking Models</title>
+    <link rel="icon" type="image/png" href="../images/logo.png" />
+    <link rel="shortcut icon" type="image/png" href="../images/logo.png" />
     <meta name="description" content="IQuest-Coder-V1 releases 7B and 14B models with shallow architecture for 3-5x faster inference, featuring excellent benchmark performance and CLI agent integration.">
     <style>
         * {
@@ -260,6 +262,10 @@
             line-height: 1.8;
         }
 
+        .section-intro-no-wrap {
+            white-space: nowrap;
+        }
+
         /* Feature Grid */
         .feature-grid {
             display: grid;
@@ -374,10 +380,19 @@
         /* Demo Section */
         .demo-showcase {
             margin: 3rem 0;
+            padding: 1.25rem;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.02);
         }
 
         .demo-header {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .demo-header .subsection-title {
+            margin-top: 0;
+            margin-bottom: 1rem;
         }
 
         .demo-title {
@@ -393,6 +408,7 @@
             font-style: italic;
             padding-left: 1rem;
             border-left: 3px solid rgba(0, 255, 255, 0.3);
+            margin-top: 0.35rem;
         }
 
         .demo-iframe-container {
@@ -417,9 +433,9 @@
         /* Video Player */
         .video-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 2rem;
-            margin: 2rem 0;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.25rem;
+            margin: 1.25rem 0 0;
         }
 
         .video-card {
@@ -428,6 +444,8 @@
             border-radius: 12px;
             overflow: hidden;
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         .video-card:hover {
@@ -440,17 +458,23 @@
             width: 100%;
             display: block;
             background: #000;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
         }
 
         .video-info {
             padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            min-height: 102px;
         }
 
         .video-model {
             font-size: 1.1rem;
             font-weight: 600;
             color: var(--primary-color);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0;
         }
 
         .video-desc {
@@ -460,26 +484,26 @@
         }
 
         .video-tabs {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 0.5rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin: 2rem 0;
-            padding: 1rem;
+            margin: 1.5rem 0 1rem;
+            padding: 0.85rem;
             background: var(--bg-card);
             border-radius: 12px;
             border: 1px solid var(--border-color);
         }
 
         .video-tab {
-            padding: 0.6rem 1.2rem;
+            padding: 0.55rem 0.95rem;
             background: transparent;
             border: 1px solid var(--border-color);
             border-radius: 6px;
             color: var(--text-secondary);
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.86rem;
             transition: all 0.3s ease;
+            width: 100%;
         }
 
         .video-tab:hover {
@@ -582,11 +606,15 @@
             }
 
             .video-tabs {
-                flex-direction: column;
+                grid-template-columns: 1fr;
             }
 
             .video-tab {
                 width: 100%;
+            }
+
+            .demo-showcase {
+                padding: 0.85rem;
             }
 
             table {
@@ -665,9 +693,6 @@
                 <h1 class="fade-in">
                     IQuest-Coder-V1: <span class="highlight" data-i18n="hero_highlight">7B/14B Family Models and 40B-Thinking Models</span>
                 </h1>
-                <!-- <p class="hero-subtitle fade-in stagger-1">
-                    Optimal Balance of Speed and Performance: 3-5x Faster Inference with Shallow Architecture
-                </p> -->
                 <!-- <div class="model-chips fade-in stagger-2">
                     <span class="chip">7B-Instruct</span>
                     <span class="chip">7B-Thinking</span>
@@ -680,7 +705,7 @@
                 <div class="feature-grid fade-in stagger-3" style="margin-top: 2rem;">
                     <div class="feature-card" style="padding: 1.5rem;">
                         <h3 class="feature-title" style="font-size: 1.1rem; margin-bottom: 0.75rem;">7B Family</h3>
-                        <p class="feature-desc" style="margin-bottom: 0.75rem; font-size: 0.9rem;">14 layers, 5x faster</p>
+                        <p class="feature-desc" style="margin-bottom: 0.75rem; font-size: 0.9rem;">14 layers</p>
                         <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.85rem;">
                             <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-7B-Base-Stage1" class="header-link" target="_blank">7B-Base-Stage1</a>
                             <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-7B-Base" class="header-link" target="_blank">7B-Base</a>
@@ -691,7 +716,7 @@
 
                     <div class="feature-card" style="padding: 1.5rem;">
                         <h3 class="feature-title" style="font-size: 1.1rem; margin-bottom: 0.75rem;">14B Family</h3>
-                        <p class="feature-desc" style="margin-bottom: 0.75rem; font-size: 0.9rem;">28 layers, 3x faster</p>
+                        <p class="feature-desc" style="margin-bottom: 0.75rem; font-size: 0.9rem;">28 layers</p>
                         <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.85rem;">
                             <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-14B-Base-Stage1" class="header-link" target="_blank">14B-Base-Stage1</a>
                             <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-14B-Base" class="header-link" target="_blank">14B-Base</a>
@@ -772,7 +797,7 @@
                     <strong>Dual Specialization Paths:</strong> Bifurcated post-training delivers two specialized variants—Thinking models (utilizing reasoning-driven RL for complex problem-solving) and Instruct models (optimized for general coding assistance and instruction-following).
                 </li>
                 <li data-i18n="highlights_item4">
-                    <strong>Efficient Architecture:</strong> The IQuest-Coder-V1-Loop variant introduces a recurrent mechanism that optimizes the trade-off between model capacity and deployment footprint. The 7B and 14B models adopt shallow architectures for faster inference speed (3-5x improvement).
+                    <strong>Efficient Architecture:</strong> The IQuest-Coder-V1-Loop variant introduces a recurrent mechanism that optimizes the trade-off between model capacity and deployment footprint. The 7B and 14B models adopt shallow architectures for faster inference speed.
                 </li>
                 <li data-i18n="highlights_item5">
                     <strong>Native Long Context:</strong> All models natively support up to 128K tokens without requiring additional scaling techniques.
@@ -1139,7 +1164,7 @@
     <section id="demos">
         <div class="container">
             <h2 class="section-title" data-i18n="demos_title">Demo Showcases</h2>
-            <p class="section-intro" data-i18n="demos_intro">
+            <p class="section-intro section-intro-no-wrap" data-i18n="demos_intro">
                 Live demonstrations of 7B/14B models' capabilities: CLI agent integration, HTML generation, and SVG graphics.
             </p>
 
@@ -1571,7 +1596,7 @@
                 highlights_item1: "<strong>State-of-the-Art Performance:</strong> Achieves leading results on SWE-Bench Verified, BigCodeBench, LiveCodeBench v6, and other major coding benchmarks, surpassing competitive models across agentic software engineering, competitive programming, and complex tool use.",
                 highlights_item2: "<strong>Code-Flow Training Paradigm:</strong> Moving beyond static code representations, our models learn from repository evolution patterns, commit transitions, and dynamic code transformations to understand real-world software development processes.",
                 highlights_item3: "<strong>Dual Specialization Paths:</strong> Bifurcated post-training delivers two specialized variants—Thinking models (utilizing reasoning-driven RL for complex problem-solving) and Instruct models (optimized for general coding assistance and instruction-following).",
-                highlights_item4: "<strong>Efficient Architecture:</strong> The IQuest-Coder-V1-Loop variant introduces a recurrent mechanism that optimizes the trade-off between model capacity and deployment footprint. The 7B and 14B models adopt shallow architectures for faster inference speed (3-5x improvement).",
+                highlights_item4: "<strong>Efficient Architecture:</strong> The IQuest-Coder-V1-Loop variant introduces a recurrent mechanism that optimizes the trade-off between model capacity and deployment footprint. The 7B and 14B models adopt shallow architectures for faster inference speed.",
                 highlights_item5: "<strong>Native Long Context:</strong> All models natively support up to 128K tokens without requiring additional scaling techniques.",
                 highlights_item6: "<strong>CLI Agent Integration:</strong> Demonstrates initial deployment capabilities on ClaudeCode and OpenCode platforms, with the ability to integrate into CLI-based agent workflows.",
                 highlights_item7: "<strong>HTML and SVG Generation:</strong> Features preliminary support for HTML webpage and SVG graphics code generation.",
@@ -1658,7 +1683,7 @@
                 highlights_item1: "<strong>SOTA 性能：</strong>在 SWE-Bench Verified、BigCodeBench、LiveCodeBench v6 等主流编码基准上取得领先结果，在智能体软件工程、竞赛编程与复杂工具调用方面超越多种竞品模型。",
                 highlights_item2: "<strong>Code-Flow 训练范式：</strong>突破静态代码表示，模型从仓库演化模式、提交迁移和动态代码变换中学习，更贴近真实软件开发过程。",
                 highlights_item3: "<strong>双路径能力专精：</strong>通过分叉式后训练得到两类专精模型——Thinking（基于推理驱动 RL，解决复杂问题）与 Instruct（面向通用代码协助和指令跟随）。",
-                highlights_item4: "<strong>高效架构：</strong>IQuest-Coder-V1-Loop 采用循环机制，在模型容量与部署开销间实现更优权衡。7B 与 14B 模型采用浅层架构，推理速度提升约 3-5 倍。",
+                highlights_item4: "<strong>高效架构：</strong>IQuest-Coder-V1-Loop 采用循环机制，在模型容量与部署开销间实现更优权衡。7B 与 14B 模型采用浅层架构，推理速度更快。",
                 highlights_item5: "<strong>原生长上下文：</strong>所有模型原生支持最高 128K 上下文，无需额外上下文扩展技巧。",
                 highlights_item6: "<strong>CLI Agent 集成：</strong>已在 ClaudeCode 与 OpenCode 平台完成初步部署验证，支持接入基于命令行的智能体工作流。",
                 highlights_item7: "<strong>HTML 与 SVG 生成：</strong>具备初步的 HTML 网页与 SVG 图形代码生成能力。",

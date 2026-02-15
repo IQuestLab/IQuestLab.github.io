@@ -418,17 +418,17 @@ html[lang="en"] .hero .subtitle {
 }
 
 .btn-version-pill {
-  background: #0099a5;
-  color: #0a0e27;
-  border-color: #0099a5;
-  box-shadow: 0 10px 24px rgba(0, 153, 165, 0.28);
+  background: rgba(0, 60, 132, 1);
+  color: #ffffff;
+  border-color: rgba(0, 60, 132, 1);
+  box-shadow: 0 10px 24px rgba(0, 60, 132, 0.32);
   font-weight: 600;
 }
 
 .btn-version-pill:hover {
-  background: #00848f;
-  border-color: #00848f;
-  box-shadow: 0 14px 30px rgba(0, 132, 143, 0.36);
+  background: rgba(0, 48, 106, 1);
+  border-color: rgba(0, 48, 106, 1);
+  box-shadow: 0 14px 30px rgba(0, 48, 106, 0.38);
 }
 
 .simple-page-actions {
