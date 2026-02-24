@@ -1,9 +1,0 @@
-node_modules/
-dist/
-.npm-cache/
-.npm-logs/
-.env
-.env.*
-
-
-
