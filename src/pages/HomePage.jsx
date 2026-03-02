@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   FiGitBranch,
   FiCpu,
@@ -244,6 +243,12 @@ export default function HomePage() {
             >
               {t("cta_report")}
               <FiFileText className="btn-icon" size={16} aria-hidden="true" />
+            </a>
+            <a
+              className="btn btn-version-pill"
+              href={assetUrl("release-1.0-2603/index.html")}
+            >
+              Release-1.0-2603
             </a>
           </div>
         </div>

@@ -417,6 +417,20 @@ html[lang="en"] .hero .subtitle {
   background: rgba(255, 255, 255, 1);
 }
 
+.btn-version-pill {
+  background: rgba(46, 125, 220, 1);
+  color: #ffffff;
+  border-color: rgba(46, 125, 220, 1);
+  box-shadow: 0 10px 24px rgba(46, 125, 220, 0.3);
+  font-weight: 600;
+}
+
+.btn-version-pill:hover {
+  background: rgba(38, 112, 204, 1);
+  border-color: rgba(38, 112, 204, 1);
+  box-shadow: 0 14px 30px rgba(38, 112, 204, 0.36);
+}
+
 .simple-page-actions {
   margin-top: 18px;
   display: flex;

@@ -35,6 +35,10 @@ module.exports = (env, argv) => {
             },
           },
         },
+        {
+          test: /\.css$/i,
+          use: ["style-loader", "css-loader"],
+        },
       ],
     },
     plugins: [
@@ -44,6 +48,13 @@ module.exports = (env, argv) => {
       }),
       new CopyWebpackPlugin({
         patterns: [
+          {
+            // 复制版本详情页目录到 dist/release-1.0-2603/*
+            from: path.resolve(__dirname, "src/release-1.0-2603/**/*"),
+            context: path.resolve(__dirname, "src"),
+            to: path.resolve(__dirname, "dist/[path][name][ext]"),
+            noErrorOnMissing: true,
+          },
           {
             from: path.resolve(__dirname, "src/assets"),
             to: path.resolve(__dirname, "dist"),
@@ -65,15 +76,24 @@ module.exports = (env, argv) => {
       }),
     ],
     devServer: {
-      port: 3000,
+      host: "0.0.0.0",
+      port: 4000,
       hot: true,
       historyApiFallback: true,
+      // 允许通过 IP/域名远程访问，否则会报 Invalid Host header
+      allowedHosts: "all",
       // output.publicPath 使用相对路径时，devMiddleware 仍需要一个可路由匹配的绝对挂载点，
       // 否则会出现 Cannot GET /（所有资源都 404）的情况。
       devMiddleware: {
         publicPath: "/",
       },
       static: [
+        {
+          // 让 /release-1.0-2603/* 直接映射到 src/release-1.0-2603/*
+          directory: path.resolve(__dirname, "src/release-1.0-2603"),
+          publicPath: "/release-1.0-2603",
+          watch: true,
+        },
         {
           // 让 /images/*、/demo/*、/style.css 直接从 src/assets 提供
           directory: path.resolve(__dirname, "src/assets"),

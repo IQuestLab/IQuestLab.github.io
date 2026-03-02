@@ -1,0 +1,2442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IQuest-Coder-V1: Releasing 7B/14B Family Models and 40B-Thinking Models</title>
+    <link rel="icon" type="image/png" href="../images/logo.png" />
+    <link rel="shortcut icon" type="image/png" href="../images/logo.png" />
+    <meta name="description" content="IQuest-Coder-V1 releases 7B and 14B models with shallow architecture for 3-5x faster inference, featuring excellent benchmark performance and CLI agent integration.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #181e25;
+            --bg-dark: #ffffff;
+            --bg-darker: #ffffff;
+            --bg-light: #f7f8fa;
+            --bg-card: rgba(255, 255, 255, 0.88);
+            --border-color: #dee2e9;
+            --text-primary: #181e25;
+            --text-secondary: #666666;
+            --text-muted: #8f97a3;
+            --accent-gradient: linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%);
+            --shadow-soft: 0 18px 45px rgba(17, 24, 39, 0.08);
+            --shadow-lift: 0 28px 80px rgba(17, 24, 39, 0.14);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-darker);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Header */
+        header {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            height: 78px;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header .container {
+            max-width: 1920px;
+            padding: 0 60px;
+            height: 100%;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 0;
+            height: 100%;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            margin-right: auto;
+        }
+
+        .logo-image {
+            height: 75px;
+            width: auto;
+            display: block;
+        }
+
+        .header-links {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .header-link {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 400;
+            padding: 8px 16px;
+            border-radius: 32px;
+            transition: color 0.3s ease, background-color 0.2s ease;
+        }
+
+        .header-link:hover {
+            color: var(--text-primary);
+            background: var(--bg-light);
+        }
+
+        .nav-lang-toggle {
+            padding: 8px 14px;
+            border-radius: 32px;
+            border: 1px solid rgba(24, 30, 37, 0.12);
+            background: rgba(255, 255, 255, 0.7);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease,
+                transform 0.12s ease;
+        }
+
+        .nav-lang-toggle:hover {
+            background: var(--bg-light);
+            border-color: rgba(24, 30, 37, 0.18);
+        }
+
+        .nav-lang-toggle:active {
+            transform: translateY(1px);
+        }
+
+        .btn {
+            height: 44px;
+            padding: 0 1.1rem;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: 1px solid;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: #ffffff;
+            border-color: var(--primary-color);
+            box-shadow: 0 14px 32px rgba(17, 24, 39, 0.18);
+        }
+
+        .btn-primary:hover {
+            background: #0f1319;
+            transform: translateY(-2px);
+            box-shadow: 0 18px 44px rgba(17, 24, 39, 0.24);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.85);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: #ffffff;
+        }
+
+        .release-section-nav {
+            position: fixed;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .release-section-toggle {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            border: 1px solid rgba(24, 30, 37, 0.18);
+            background: rgba(255, 255, 255, 0.76);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(8px);
+            transition: transform 160ms ease, background-color 160ms ease;
+        }
+
+        .release-section-toggle:hover {
+            background: rgba(255, 255, 255, 0.92);
+            transform: translateY(-1px);
+        }
+
+        .release-section-nav-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 14px;
+            border: 1px solid rgba(24, 30, 37, 0.12);
+            background: rgba(255, 255, 255, 0.62);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 14px 38px rgba(0, 0, 0, 0.1);
+            transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .release-section-link {
+            display: grid;
+            grid-template-columns: 1fr;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: rgba(24, 30, 37, 0.62);
+            border: 1px solid transparent;
+            transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .release-section-link:hover {
+            background: rgba(24, 30, 37, 0.05);
+            border-color: rgba(24, 30, 37, 0.12);
+            color: rgba(24, 30, 37, 0.82);
+        }
+
+        .release-section-link.is-active {
+            background: linear-gradient(
+                90deg,
+                rgba(124, 92, 255, 0.14),
+                rgba(47, 140, 255, 0.1)
+            );
+            border-color: rgba(124, 92, 255, 0.22);
+            color: var(--text-primary);
+        }
+
+        .release-section-nav.is-collapsed .release-section-nav-inner {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(8px);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: var(--bg-darker);
+            padding: 2.75rem 0 2.25rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+
+        .hero h1 .highlight {
+            background: linear-gradient(135deg, #181e25, #2f8cff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .model-chips {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2.5rem;
+        }
+
+        .chip {
+            padding: 0.5rem 1.2rem;
+            background: rgba(0, 255, 255, 0.15);
+            border: 1px solid var(--primary-color);
+            border-radius: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 0.95rem;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Section */
+        section {
+            padding: 2.6rem 0;
+            background: var(--bg-darker);
+        }
+
+        section:nth-of-type(even) {
+            background: var(--bg-light);
+            background-image:
+                radial-gradient(
+                    760px 440px at 18% 12%,
+                    rgba(24, 30, 37, 0.05),
+                    transparent 62%
+                ),
+                radial-gradient(
+                    900px 520px at 86% 0%,
+                    rgba(24, 30, 37, 0.04),
+                    transparent 62%
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(24, 30, 37, 0.025) 0 1px,
+                    transparent 1px 44px
+                ),
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(24, 30, 37, 0.02) 0 1px,
+                    transparent 1px 44px
+                );
+            background-repeat: no-repeat, no-repeat, repeat, repeat;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .section-intro {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto 3rem;
+            line-height: 1.8;
+        }
+
+        .section-intro-no-wrap {
+            white-space: nowrap;
+        }
+
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lift);
+            border-color: var(--primary-color);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 255, 255, 0.15);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+            font-size: 1.5rem;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-desc {
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        /* Benchmark Table */
+        .subsection-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 4rem 0 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 2rem 0;
+            border-radius: 14px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border: none;
+        }
+
+        thead {
+            background: #2f5f7f;
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #ffffff;
+            border-bottom: 2px solid rgba(47, 99, 168, 0.72);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 0.9rem 1rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            white-space: nowrap;
+        }
+
+        tbody tr:hover {
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .model-name {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .speed-fast {
+            color: #00ff00;
+            font-weight: 600;
+        }
+
+        /* Demo Section */
+        .demo-showcase {
+            margin: 3rem 0;
+            padding: 1.25rem;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .demo-header {
+            margin-bottom: 1.25rem;
+        }
+
+        .demo-header .subsection-title {
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+
+        .demo-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .demo-prompt {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-style: italic;
+            padding-left: 1rem;
+            border-left: 3px solid rgba(0, 255, 255, 0.3);
+            margin-top: 0.35rem;
+        }
+
+        .demo-iframe-container {
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .demo-iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            display: block;
+        }
+
+        .demo-iframe.tall {
+            height: 800px;
+        }
+
+        /* Video Player */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.25rem;
+            margin: 1.25rem 0 0;
+        }
+
+        .video-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lift);
+            border-color: var(--primary-color);
+        }
+
+        .video-card video {
+            width: 100%;
+            display: block;
+            background: #000;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+        }
+
+        .video-info {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            min-height: 102px;
+        }
+
+        .video-model {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0;
+        }
+
+        .video-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .video-tabs {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.5rem;
+            margin: 1.5rem 0 1rem;
+            padding: 0.85rem;
+            background: var(--bg-card);
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .video-tab {
+            padding: 0.55rem 0.95rem;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.86rem;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .video-tab:hover {
+            background: #ffffff;
+            border-color: var(--primary-color);
+            color: var(--text-primary);
+        }
+
+        .video-tab.active {
+            background: #2f5f7f;
+            color: #ffffff;
+            border-color: #2f5f7f;
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.28);
+        }
+
+        /* Highlights Section */
+        .highlights {
+            background: inherit;
+        }
+
+        .highlights-grid {
+            margin: 2rem 0 0;
+            align-items: stretch;
+        }
+
+        .highlights-grid .feature-card {
+            height: 100%;
+        }
+
+        .highlights-grid .feature-desc strong {
+            color: var(--text-primary);
+        }
+
+        .benchmark-visual-wrap {
+            margin-top: 22px;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .benchmark-visual-wrap img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        #benchmark-visual .section-intro {
+            max-width: none;
+            margin-left: 0;
+            margin-right: 0;
+            padding-left: 6px;
+            padding-right: 6px;
+        }
+
+        @media (min-width: 901px) {
+            .highlights-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .highlights-grid .feature-card:last-child {
+                grid-column: 2 / -1;
+            }
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-dark);
+            border-top: 1px solid var(--border-color);
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-link:hover {
+            color: var(--primary-color);
+        }
+
+        .copyright {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .container {
+                padding: 0 1.25rem;
+            }
+
+            .hero {
+                padding: 2.3rem 0 2rem;
+            }
+
+            section {
+                padding: 2.2rem 0;
+            }
+
+            .section-title {
+                font-size: 2.1rem;
+            }
+
+            .header-links {
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .video-tabs {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .section-intro-no-wrap {
+                white-space: normal;
+            }
+
+            .hero h1 {
+                white-space: normal;
+            }
+        }
+
+        @media (min-width: 1025px) {
+            #benchmark-visual .section-intro {
+                white-space: nowrap;
+            }
+        }
+
+        @media (max-width: 960px) {
+            .release-section-nav {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                height: auto;
+                padding: 1rem 0;
+            }
+
+            .container {
+                padding: 0 0.9rem;
+            }
+
+            header .container {
+                padding: 0 20px;
+            }
+
+            .header-content {
+                align-items: flex-start;
+                flex-wrap: wrap;
+                gap: 0.75rem;
+            }
+
+            .logo-image {
+                height: 48px;
+            }
+
+            .header-links {
+                width: 100%;
+                justify-content: flex-start;
+                gap: 0.55rem 0.85rem;
+            }
+
+            .header-link {
+                font-size: 14px;
+                padding: 7px 12px;
+            }
+
+            .hero h1 {
+                font-size: 1.75rem;
+                line-height: 1.3;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1.75rem;
+            }
+
+            .section-intro {
+                font-size: 1rem;
+                margin: 0 auto 2rem;
+                line-height: 1.7;
+            }
+
+            .subsection-title {
+                font-size: 1.3rem;
+                margin: 2.5rem 0 1rem;
+            }
+
+            .feature-grid,
+            .video-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-card {
+                padding: 1.2rem;
+            }
+
+            .video-tabs {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                padding: 0.65rem;
+                gap: 0.45rem;
+            }
+
+            .video-tab {
+                width: 100%;
+                padding: 0.5rem 0.55rem;
+                font-size: 0.8rem;
+                white-space: nowrap;
+            }
+
+            .video-info {
+                min-height: auto;
+                padding: 1rem;
+            }
+
+            .demo-showcase {
+                padding: 0.8rem;
+                border-radius: 10px;
+            }
+
+            .demo-prompt {
+                font-size: 0.86rem;
+                padding-left: 0.75rem;
+            }
+
+            .hero-actions .btn {
+                width: 100%;
+                justify-content: center;
+                max-width: 320px;
+            }
+
+            .table-wrapper {
+                margin: 1rem 0;
+            }
+
+            table {
+                font-size: 0.74rem;
+            }
+
+            th, td {
+                padding: 0.5rem 0.4rem;
+            }
+
+            section {
+                padding: 1.8rem 0;
+            }
+
+            .demo-iframe {
+                height: 320px;
+            }
+
+            .demo-iframe.tall {
+                height: 420px;
+            }
+
+            .footer-links {
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 0.75rem;
+            }
+
+            header .container {
+                padding: 0 14px;
+            }
+
+            .logo-image {
+                height: 40px;
+            }
+
+            .header-links {
+                gap: 0.45rem 0.65rem;
+            }
+
+            .header-link {
+                font-size: 13px;
+                padding: 6px 10px;
+            }
+
+            .hero {
+                padding: 1.9rem 0 1.7rem;
+            }
+
+            .hero h1 {
+                font-size: 1.45rem;
+            }
+
+            .section-title {
+                font-size: 1.45rem;
+            }
+
+            .section-intro {
+                font-size: 0.92rem;
+            }
+
+            .video-tabs {
+                grid-template-columns: 1fr;
+            }
+
+            .video-tab {
+                font-size: 0.82rem;
+            }
+
+            table {
+                font-size: 0.68rem;
+            }
+
+            th, td {
+                padding: 0.45rem 0.35rem;
+            }
+
+            .demo-iframe {
+                height: 260px;
+            }
+
+            .demo-iframe.tall {
+                height: 340px;
+            }
+
+            .highlights-grid {
+                margin-top: 1.5rem;
+            }
+        }
+
+        /* Scroll Animation */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="../" class="logo" aria-label="Back to Home">
+                    <img src="../images/logo-full.jpg" alt="IQuest logo" class="logo-image" onerror="this.onerror=null;this.src='../images/iquest.svg';" />
+                </a>
+                <div class="header-links">
+                    <button id="lang-toggle-btn" type="button" class="nav-lang-toggle">中 / EN</button>
+                    <a href="https://github.com/IQuestLab/IQuest-Coder-V1" class="header-link" target="_blank">GitHub</a>
+                    <a href="https://huggingface.co/IQuestLab" class="header-link" target="_blank">Hugging Face</a>
+                    <a href="https://github.com/IQuestLab/IQuest-Coder-V1/blob/main/papers/IQuest_Coder_Technical_Report.pdf" class="header-link" target="_blank" data-i18n="technical_report">Technical Report</a>
+                    <a href="../" class="header-link" data-i18n="back_home">Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="release-section-nav is-collapsed" aria-label="Release page sections">
+        <button
+            id="release-nav-toggle"
+            type="button"
+            class="release-section-toggle"
+            aria-expanded="false"
+            aria-label="Expand section navigation"
+            title="Expand section navigation"
+        >
+            ☰
+        </button>
+        <div class="release-section-nav-inner">
+            <a href="#advantages" class="release-section-link" data-section-link="advantages" data-i18n="release_nav_advantages">Advantages</a>
+            <a href="#highlights" class="release-section-link" data-section-link="highlights" data-i18n="release_nav_highlights">Highlights</a>
+            <a href="#benchmark-visual" class="release-section-link" data-section-link="benchmark-visual" data-i18n="release_nav_benchmark_visual">Benchmark</a>
+            <a href="#benchmarks" class="release-section-link" data-section-link="benchmarks" data-i18n="release_nav_benchmarks">Benchmarks</a>
+            <a href="#demos" class="release-section-link" data-section-link="demos" data-i18n="release_nav_demos">Demos</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="fade-in">
+                    IQuest-Coder-V1: <span class="highlight" data-i18n="hero_highlight">7B/14B Family Models and 40B-Thinking Models</span>
+                </h1>
+                <!-- <div class="model-chips fade-in stagger-2">
+                    <span class="chip">7B-Instruct</span>
+                    <span class="chip">7B-Thinking</span>
+                    <span class="chip">14B-Instruct</span>
+                    <span class="chip">14B-Thinking</span>
+                    <span class="chip">40B-Thinking</span>
+                </div> -->
+
+                <!-- Download Models Grid -->
+                <div class="feature-grid fade-in stagger-3" style="margin-top: 2rem;">
+                    <div class="feature-card" style="padding: 1.5rem;">
+                        <h3 class="feature-title" style="font-size: 1.1rem; margin-bottom: 0.75rem;">7B Family</h3>
+                        <p class="feature-desc" style="margin-bottom: 0.75rem; font-size: 0.9rem;">14 layers</p>
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.85rem;">
+                            <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-7B-Base-Stage1" class="header-link" target="_blank">7B-Base-Stage1</a>
+                            <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-7B-Base" class="header-link" target="_blank">7B-Base</a>
+                            <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-7B-Instruct" class="header-link" target="_blank">7B-Instruct</a>
+                            <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-7B-Thinking" class="header-link" target="_blank">7B-Thinking</a>
+                        </div>
+                    </div>
+
+                    <div class="feature-card" style="padding: 1.5rem;">
+                        <h3 class="feature-title" style="font-size: 1.1rem; margin-bottom: 0.75rem;">14B Family</h3>
+                        <p class="feature-desc" style="margin-bottom: 0.75rem; font-size: 0.9rem;">28 layers</p>
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.85rem;">
+                            <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-14B-Base-Stage1" class="header-link" target="_blank">14B-Base-Stage1</a>
+                            <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-14B-Base" class="header-link" target="_blank">14B-Base</a>
+                            <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-14B-Instruct" class="header-link" target="_blank">14B-Instruct</a>
+                            <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-14B-Thinking" class="header-link" target="_blank">14B-Thinking</a>
+                        </div>
+                    </div>
+
+                    <div class="feature-card" style="padding: 1.5rem;">
+                        <h3 class="feature-title" style="font-size: 1.1rem; margin-bottom: 0.75rem;">40B-Thinking</h3>
+                        <p class="feature-desc" style="margin-bottom: 0.75rem; font-size: 0.9rem;">80 layers, max performance</p>
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.85rem;">
+                            <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-40B-Thinking" class="header-link" target="_blank">40B-Thinking</a>
+                            <a href="https://huggingface.co/IQuestLab/IQuest-Coder-V1-40B-Loop-Thinking" class="header-link" target="_blank">40B-Loop-Thinking</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-actions fade-in stagger-4" style="margin-top: 2rem;">
+                    <a href="https://huggingface.co/collections/IQuestLab/iquest-coder" class="btn btn-primary" target="_blank" data-i18n="cta_view_all">
+                        View All on Hugging Face
+                    </a>
+                    <a href="#benchmarks" class="btn btn-secondary" data-i18n="cta_benchmarks">
+                        View Benchmarks
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Advantages -->
+    <section id="advantages">
+        <div class="container">
+            <h2 class="section-title" data-i18n="advantages_title">Why 7B/14B Models?</h2>
+            <div class="feature-grid">
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">⚡</div>
+                    <h3 class="feature-title" data-i18n="feature_fast_title">Shallow Architecture, Ultra-Fast Inference</h3>
+                    <p class="feature-desc" data-i18n="feature_fast_desc">
+                        7B model with only 14 layers, 14B with 28 layers (vs. 40B's 80 layers), dramatically reducing inference latency to real-time interaction levels.
+                    </p>
+                </div>
+
+                <div class="feature-card fade-in stagger-2">
+                    <div class="feature-icon">🖥️</div>
+                    <h3 class="feature-title" data-i18n="feature_cli_title">CLI Agent Integration</h3>
+                    <p class="feature-desc" data-i18n="feature_cli_desc">
+                        Successfully deployed and tested on ClaudeCode and OpenCode platforms, supporting command-line interactive programming assistance.
+                    </p>
+                </div>
+
+                <div class="feature-card fade-in stagger-3">
+                    <div class="feature-icon">🎨</div>
+                    <h3 class="feature-title" data-i18n="feature_html_svg_title">HTML & SVG Generation</h3>
+                    <p class="feature-desc" data-i18n="feature_html_svg_desc">
+                        Preliminary HTML webpage and SVG graphics generation capabilities for rapid visual application development.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- IQuest-Coder-V1 Highlights -->
+    <section id="highlights" class="highlights">
+        <div class="container">
+            <h2 class="section-title" data-i18n="highlights_title">IQuest-Coder-V1 Highlights</h2>
+            <p class="section-intro" data-i18n="highlights_intro">
+                A new family of code large language models (LLMs) designed to advance autonomous software engineering and code intelligence.
+            </p>
+
+            <div class="feature-grid highlights-grid">
+                <article class="feature-card">
+                    <h3 class="feature-title" data-i18n="highlights_item7_title">HTML and SVG Generation</h3>
+                    <p class="feature-desc" data-i18n="highlights_item7_desc">
+                        Features preliminary support for HTML webpage and SVG graphics code generation.
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <h3 class="feature-title" data-i18n="highlights_item2_title">Code-Flow Training Paradigm</h3>
+                    <p class="feature-desc" data-i18n="highlights_item2_desc">
+                        Moving beyond static code representations, our models learn from repository evolution patterns, commit transitions, and dynamic code transformations to understand real-world software development processes.
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <h3 class="feature-title" data-i18n="highlights_item3_title">Dual Specialization Paths</h3>
+                    <p class="feature-desc" data-i18n="highlights_item3_desc">
+                        Bifurcated post-training delivers two specialized variants—Thinking models (utilizing reasoning-driven RL for complex problem-solving) and Instruct models (optimized for general coding assistance and instruction-following).
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <h3 class="feature-title" data-i18n="highlights_item4_title">Efficient Architecture</h3>
+                    <p class="feature-desc" data-i18n="highlights_item4_desc">
+                        The IQuest-Coder-V1-Loop variant introduces a recurrent mechanism that optimizes the trade-off between model capacity and deployment footprint. The 7B and 14B models adopt shallow architectures for faster inference speed.
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <h3 class="feature-title" data-i18n="highlights_item5_title">Native Long Context</h3>
+                    <p class="feature-desc" data-i18n="highlights_item5_desc">
+                        All models natively support up to 128K tokens without requiring additional scaling techniques.
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <h3 class="feature-title" data-i18n="highlights_item6_title">CLI Agent Integration</h3>
+                    <p class="feature-desc" data-i18n="highlights_item6_desc">
+                        Demonstrates initial deployment capabilities on ClaudeCode and OpenCode platforms, with the ability to integrate into CLI-based agent workflows.
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <h3 class="feature-title" data-i18n="highlights_item1_title">State-of-the-Art Performance</h3>
+                    <p class="feature-desc" data-i18n="highlights_item1_desc">
+                        Achieves leading results on SWE-Bench Verified, BigCodeBench, LiveCodeBench v6, and other major coding benchmarks, surpassing competitive models across agentic software engineering, competitive programming, and complex tool use.
+                    </p>
+                </article>
+                <article class="feature-card">
+                    <h3 class="feature-title" data-i18n="highlights_loop_arch_title">Architecture-Level Chain-of-Thought via Recurrent Depth</h3>
+                    <p class="feature-desc" data-i18n="highlights_loop_arch_desc">
+                        40B-Loop-Thinking is a research-oriented experimental prototype for exploring how structural chain-of-thought and procedural chain-of-thought can cooperate in one system.
+
+                    </p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section id="benchmark-visual">
+        <div class="container">
+            <h2 class="section-title" data-i18n="benchmark_visual_title">Benchmark Highlights</h2>
+            <p class="section-intro" data-i18n="benchmark_visual_intro">
+                Performance snapshot across SWE-Bench Verified, BigCodeBench, LiveCodeBench, SWE-Multi, and Tau-Bench.
+            </p>
+            <div class="benchmark-visual-wrap fade-in">
+                <img src="./benchmark.jpeg" alt="Benchmark chart overview" />
+            </div>
+        </div>
+    </section>
+
+    <!-- Benchmarks -->
+    <section id="benchmarks">
+        <div class="container">
+            <h2 class="section-title" data-i18n="benchmarks_title">Performance Comparison</h2>
+            <p class="section-intro" data-i18n="benchmarks_intro">
+                Complete benchmark results across all model sizes from model-performance data.
+            </p>
+
+            <!-- Core Coding Benchmarks -->
+            <h3 class="subsection-title" data-i18n="benchmarks_core_title">Core Coding Benchmarks</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>BigCodeBench<br>(Full)</th>
+                            <th>BigCodeBench<br>(Hard)</th>
+                            <th>HumanEval</th>
+                            <th>HumanEval+</th>
+                            <th>MBPP</th>
+                            <th>MBPP+</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="model-name">7B-Instruct</td>
+                            <td>38.86</td>
+                            <td>22.97</td>
+                            <td>79.90</td>
+                            <td>73.20</td>
+                            <td>73.50</td>
+                            <td>63.50</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">7B-Thinking</td>
+                            <td>40.53</td>
+                            <td>19.59</td>
+                            <td>76.80</td>
+                            <td>70.70</td>
+                            <td>76.50</td>
+                            <td>62.40</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">14B-Instruct</td>
+                            <td>46.32</td>
+                            <td>26.35</td>
+                            <td>83.50</td>
+                            <td>78.70</td>
+                            <td>79.60</td>
+                            <td>68.50</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">14B-Thinking</td>
+                            <td>47.72</td>
+                            <td>23.65</td>
+                            <td>92.70</td>
+                            <td>86.00</td>
+                            <td>90.50</td>
+                            <td>72.00</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">40B-Thinking</td>
+                            <td>51.05</td>
+                            <td>29.05</td>
+                            <td>93.90</td>
+                            <td>87.80</td>
+                            <td>91.00</td>
+                            <td>75.10</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">40B-Loop-Thinking</td>
+                            <td>50.61</td>
+                            <td>29.73</td>
+                            <td>97.60</td>
+                            <td>89.60</td>
+                            <td>91.00</td>
+                            <td>76.20</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Code Understanding & Reasoning -->
+            <h3 class="subsection-title" data-i18n="benchmarks_reasoning_title">Code Understanding & Reasoning</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>CruxEval<br>(Input)</th>
+                            <th>CruxEval<br>(Output)</th>
+                            <th>CodeArena<br>(Score)</th>
+                            <th>CodeArena<br>(Win Rate %)</th>
+                            <th>CodeArena<br>(Tie Rate %)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="model-name">7B-Instruct</td>
+                            <td>45.80</td>
+                            <td>54.20</td>
+                            <td>0.37</td>
+                            <td>31.28</td>
+                            <td>10.77</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">7B-Thinking</td>
+                            <td>57.60</td>
+                            <td>81.50</td>
+                            <td>0.28</td>
+                            <td>23.33</td>
+                            <td>10.00</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">14B-Instruct</td>
+                            <td>52.60</td>
+                            <td>57.60</td>
+                            <td>0.65</td>
+                            <td>60.00</td>
+                            <td>10.77</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">14B-Thinking</td>
+                            <td>80.50</td>
+                            <td>90.60</td>
+                            <td>0.72</td>
+                            <td>67.44</td>
+                            <td>9.49</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">40B-Thinking</td>
+                            <td>87.40</td>
+                            <td>94.00</td>
+                            <td>0.92</td>
+                            <td>88.97</td>
+                            <td>5.13</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">40B-Loop-Thinking</td>
+                            <td>76.50</td>
+                            <td>75.20</td>
+                            <td>0.65</td>
+                            <td>59.23</td>
+                            <td>11.54</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- LiveCodeBench & Multi-Language -->
+            <h3 class="subsection-title" data-i18n="benchmarks_multilang_title">LiveCodeBench & Multi-Language Support</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>LiveCodeBench<br>(v5)</th>
+                            <th>LiveCodeBench<br>(v6)</th>
+                            <th>Multiple<br>(Avg)</th>
+                            <th>Python</th>
+                            <th>JavaScript</th>
+                            <th>Java</th>
+                            <th>C++</th>
+                            <th>TypeScript</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="model-name">7B-Instruct</td>
+                            <td>24.55</td>
+                            <td>24.57</td>
+                            <td>66.15</td>
+                            <td>82.30</td>
+                            <td>73.30</td>
+                            <td>63.30</td>
+                            <td>65.20</td>
+                            <td>78.00</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">7B-Thinking</td>
+                            <td>37.72</td>
+                            <td>36.57</td>
+                            <td>53.66</td>
+                            <td>74.40</td>
+                            <td>64.00</td>
+                            <td>53.80</td>
+                            <td>48.40</td>
+                            <td>66.00</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">14B-Instruct</td>
+                            <td>37.72</td>
+                            <td>40.00</td>
+                            <td>71.24</td>
+                            <td>81.10</td>
+                            <td>77.00</td>
+                            <td>69.00</td>
+                            <td>79.50</td>
+                            <td>76.10</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">14B-Thinking</td>
+                            <td>72.46</td>
+                            <td>66.29</td>
+                            <td>67.09</td>
+                            <td>86.00</td>
+                            <td>76.40</td>
+                            <td>66.50</td>
+                            <td>67.70</td>
+                            <td>76.10</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">40B-Thinking</td>
+                            <td>77.25</td>
+                            <td>77.71</td>
+                            <td>75.39</td>
+                            <td>89.00</td>
+                            <td>83.20</td>
+                            <td>81.00</td>
+                            <td>74.50</td>
+                            <td>78.00</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">40B-Loop-Thinking</td>
+                            <td>79.64</td>
+                            <td>80.00</td>
+                            <td>80.26</td>
+                            <td>89.00</td>
+                            <td>88.20</td>
+                            <td>86.70</td>
+                            <td>84.50</td>
+                            <td>83.60</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Terminal & Agent Capabilities -->
+            <h3 class="subsection-title" data-i18n="benchmarks_terminal_title">Terminal & Agent Capabilities</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Terminal-Bench<br>(v1)</th>
+                            <th>Terminal-Bench<br>(v2)</th>
+                            <th>SWE-Verified</th>
+                            <th>Multi-SWE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="model-name">7B-Instruct</td>
+                            <td>22.50</td>
+                            <td>11.23</td>
+                            <td>45.00</td>
+                            <td>17.33</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">7B-Thinking</td>
+                            <td>21.25</td>
+                            <td>6.89</td>
+                            <td>38.80</td>
+                            <td>13.33</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">14B-Instruct</td>
+                            <td>36.25</td>
+                            <td>16.85</td>
+                            <td>66.20</td>
+                            <td>48.00</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">14B-Thinking</td>
+                            <td>26.25</td>
+                            <td>14.10</td>
+                            <td>63.60</td>
+                            <td>37.00</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">40B-Thinking</td>
+                            <td>30.00</td>
+                            <td>22.30</td>
+                            <td>71.20</td>
+                            <td>48.67</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">40B-Loop-Thinking</td>
+                            <td>30.00</td>
+                            <td>18.80</td>
+                            <td>69.40</td>
+                            <td>36.33</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Function Calling & Task Planning -->
+            <h3 class="subsection-title" data-i18n="benchmarks_function_calling_title">Function Calling & Task Planning</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>BFCL (v3)</th>
+                            <th>Tau-Bench-2<br>(Airline)</th>
+                            <th>Tau-Bench-2<br>(Retail)</th>
+                            <th>Tau-Bench-2<br>(Telecom)</th>
+                            <th>Mercury<br>(Beyond@1)</th>
+                            <th>Mercury<br>(Pass@1)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="model-name">7B-Instruct</td>
+                            <td>34.02</td>
+                            <td>59.18</td>
+                            <td>49.12</td>
+                            <td>85.96</td>
+                            <td>42.12</td>
+                            <td>50.39</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">7B-Thinking</td>
+                            <td>43.34</td>
+                            <td>52.00</td>
+                            <td>65.49</td>
+                            <td>76.99</td>
+                            <td>43.24</td>
+                            <td>53.52</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">14B-Instruct</td>
+                            <td>55.10</td>
+                            <td>70.00</td>
+                            <td>78.07</td>
+                            <td>84.21</td>
+                            <td>63.29</td>
+                            <td>76.17</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">14B-Thinking</td>
+                            <td>53.59</td>
+                            <td>59.18</td>
+                            <td>76.32</td>
+                            <td>87.72</td>
+                            <td>61.99</td>
+                            <td>74.22</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">40B-Thinking</td>
+                            <td>64.18</td>
+                            <td>66.00</td>
+                            <td>87.72</td>
+                            <td>91.23</td>
+                            <td>71.14</td>
+                            <td>83.20</td>
+                        </tr>
+                        <tr>
+                            <td class="model-name">40B-Loop-Thinking</td>
+                            <td>61.57</td>
+                            <td>64.00</td>
+                            <td>78.07</td>
+                            <td>89.47</td>
+                            <td>79.61</td>
+                            <td>94.92</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Demo Showcases -->
+    <section id="demos">
+        <div class="container">
+            <h2 class="section-title" data-i18n="demos_title">Demo Showcases</h2>
+            <p class="section-intro section-intro-no-wrap" data-i18n="demos_intro">
+                Live demonstrations of 7B/14B models' capabilities: CLI agent integration, HTML generation, and SVG graphics.
+            </p>
+
+            <!-- CLI Demo -->
+            <div class="demo-showcase">
+                <div class="demo-header">
+                    <h3 class="subsection-title" data-i18n="cli_demo_title">CLI Demo: Claude Code & OpenClaw</h3>
+                    <p class="demo-prompt" style="margin-bottom: 1rem;" data-i18n="cli_demo_prompt">
+                        <strong>Demos 1-4:</strong> Claude Code Integration | <strong>Demo 5:</strong> OpenClaw Computer Use
+                    </p>
+                </div>
+
+                <!-- Video Tabs -->
+                <div class="video-tabs">
+                    <button class="video-tab active" onclick="showDemo('demo1', event)" data-i18n="cli_tab_1">Demo 1: Bug Fix</button>
+                    <button class="video-tab" onclick="showDemo('demo2', event)" data-i18n="cli_tab_2">Demo 2: Log Analysis</button>
+                    <button class="video-tab" onclick="showDemo('demo3', event)" data-i18n="cli_tab_3">Demo 3: Log Extraction</button>
+                    <button class="video-tab" onclick="showDemo('demo4', event)" data-i18n="cli_tab_4">Demo 4: Pomodoro</button>
+                    <button class="video-tab" onclick="showDemo('demo5', event)" data-i18n="cli_tab_5">Demo 5: OpenClaw</button>
+                </div>
+
+                <!-- Demo 1 Videos -->
+                <div id="demo1" class="video-section">
+                    <div class="demo-title" style="margin-bottom: 0.5rem;" data-i18n="cli_demo1_title">Demo 1: Multi-Agent Bug Fix (Claude Code)</div>
+                    <p class="demo-prompt" style="margin-bottom: 2rem;" data-i18n="demo1_prompt">
+                        多agent系统修复 - Task 1: 修复上下文截断 Bug → 代码阅读、Bug 定位、数据结构理解 | Task 2: 参数校验 + 新工具 → 功能实现、安全意识、Schema 处理
+                    </p>
+                    <div class="video-grid">
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo1-7b-instruct.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">7B-Instruct</div>
+                                <div class="video-desc" data-i18n="cli_demo1_desc_7b_instruct">Fast inference for multi-agent system debugging</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo1-7b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">7B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo1_desc_7b_thinking">Reasoning with compact model</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo1-14b-instruct.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">14B-Instruct</div>
+                                <div class="video-desc" data-i18n="cli_demo1_desc_14b_instruct">Balanced performance for complex bug fixing</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo1-14b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">14B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo1_desc_14b_thinking">Reasoning traces for deep code understanding</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo1-40b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">40B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo1_desc_40b_thinking">Maximum capability for sophisticated problem-solving</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Demo 2 Videos -->
+                <div id="demo2" class="video-section" style="display: none;">
+                    <div class="demo-title" style="margin-bottom: 0.5rem;" data-i18n="cli_demo2_title">Demo 2: Log Analysis (Claude Code)</div>
+                    <p class="demo-prompt" style="margin-bottom: 2rem;" data-i18n="demo2_prompt">分析log文件，提取关键信息（loss），并绘制折线图</p>
+                    <div class="video-grid">
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo2-7b-instruct.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">7B-Instruct</div>
+                                <div class="video-desc" data-i18n="cli_demo2_desc_7b_instruct">Log analysis and data visualization</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo2-7b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">7B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo2_desc_7b_thinking">Data extraction with reasoning</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo2-14b-instruct.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">14B-Instruct</div>
+                                <div class="video-desc" data-i18n="cli_demo2_desc_14b_instruct">Enhanced log parsing capabilities</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo2-14b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">14B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo2_desc_14b_thinking">Analytical reasoning for log processing</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo2-40b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">40B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo2_desc_40b_thinking">Advanced analytical reasoning</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Demo 3 Videos -->
+                <div id="demo3" class="video-section" style="display: none;">
+                    <div class="demo-title" style="margin-bottom: 0.5rem;" data-i18n="cli_demo3_title">Demo 3: Log Extraction & Validation (Claude Code)</div>
+                    <p class="demo-prompt" style="margin-bottom: 2rem;" data-i18n="demo3_prompt">让 Agent 从服务器日志中提取错误信息保存为 JSON 文件，随后编写一个 Python 测试脚本来校验该 JSON 文件的数据格式与完整性</p>
+                    <div class="video-grid">
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo3-7b-instruct.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">7B-Instruct</div>
+                                <div class="video-desc" data-i18n="cli_demo3_desc_7b_instruct">Error extraction and validation</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo3-7b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">7B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo3_desc_7b_thinking">Structured error processing</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo3-14b-instruct.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">14B-Instruct</div>
+                                <div class="video-desc" data-i18n="cli_demo3_desc_14b_instruct">Advanced error extraction</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo3-14b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">14B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo3_desc_14b_thinking">Comprehensive error handling</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo3-40b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">40B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo3_desc_40b_thinking">Expert-level validation logic</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Demo 4 Videos -->
+                <div id="demo4" class="video-section" style="display: none;">
+                    <div class="demo-title" style="margin-bottom: 0.5rem;" data-i18n="cli_demo4_title">Demo 4: Pomodoro Timer (Claude Code)</div>
+                    <p class="demo-prompt" style="margin-bottom: 2rem;" data-i18n="demo4_prompt">生成番茄钟网站</p>
+                    <div class="video-grid">
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo4-7b-instruct.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">7B-Instruct</div>
+                                <div class="video-desc" data-i18n="cli_demo4_desc_7b_instruct">Quick web app generation</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo4-7b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">7B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo4_desc_7b_thinking">Structured UI planning</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo4-14b-instruct.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">14B-Instruct</div>
+                                <div class="video-desc" data-i18n="cli_demo4_desc_14b_instruct">Web application generation</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo4-14b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">14B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo4_desc_14b_thinking">Feature-rich timer implementation</div>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <video controls preload="metadata">
+                                <source src="./demo/cli/demo4-40b-thinking.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model">40B-Thinking</div>
+                                <div class="video-desc" data-i18n="cli_demo4_desc_40b_thinking">Full-featured Pomodoro timer app</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Demo 5 Videos: OpenClaw -->
+                <div id="demo5" class="video-section" style="display: none;">
+                    <p class="demo-prompt" style="margin-bottom: 2rem;" data-i18n="cli_demo5_prompt">OpenClaw - Computer Use Demo: Autonomous agent using Claude Code API to control desktop applications and complete real-world tasks</p>
+                    <div class="video-grid">
+                        <div class="video-card" style="max-width: 800px; margin: 0 auto;">
+                            <video controls preload="metadata" style="width: 100%;">
+                                <source src="./demo/cli/demo-openclaw.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-info">
+                                <div class="video-model" data-i18n="cli_demo5_model">OpenClaw Demo</div>
+                                <div class="video-desc" data-i18n="cli_demo5_desc">Real-world computer use automation with Claude Code API</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HTML Demo 1 -->
+            <div class="demo-showcase">
+                <div class="demo-header">
+                    <h3 class="subsection-title" data-i18n="html_demos_title">HTML Demos: Single-File Web Applications</h3>
+                    <div class="demo-title" data-i18n="html_demo1_title">Demo 1: Neon Pixel Runner Game</div>
+                    <p class="demo-prompt" data-i18n="html_demo1_prompt">
+                        赛博朋克风格的像素跑酷游戏 - 躲避障碍物，获得高分
+                    </p>
+                </div>
+                <div class="demo-iframe-container">
+                    <iframe src="./demo/html/demo1.html" class="demo-iframe tall" title="Neon Pixel Runner"></iframe>
+                </div>
+            </div>
+
+            <!-- HTML Demo 2 -->
+            <div class="demo-showcase">
+                <div class="demo-header">
+                    <div class="demo-title" data-i18n="html_demo2_title">Demo 2: Neural Network Visualization (Three.js)</div>
+                    <p class="demo-prompt" data-i18n="html_demo2_prompt">
+                        生成一个神经网络可视化页面，单文件 HTML，使用 Three.js：分层神经网络结构，信号粒子流动传播，节点激活级联，赛博朋克风格 UI
+                    </p>
+                </div>
+                <div class="demo-iframe-container">
+                    <iframe src="./demo/html/demo2.html" class="demo-iframe tall" title="Neural Network Visualization"></iframe>
+                </div>
+            </div>
+
+            <!-- SVG Demo 1 -->
+            <div class="demo-showcase">
+                <div class="demo-header">
+                    <h3 class="subsection-title" data-i18n="svg_demos_title">SVG Demos: Vector Graphics & Animations</h3>
+                    <div class="demo-title" data-i18n="svg_demo1_title">Demo 1: Cyberpunk Radar Animation</div>
+                    <p class="demo-prompt" data-i18n="svg_demo1_prompt">
+                        用svg画一个赛博朋克的雷达波纹
+                    </p>
+                </div>
+                <div class="demo-iframe-container">
+                    <iframe src="./demo/svg/demo1.html" class="demo-iframe" title="Cyberpunk Radar Animation"></iframe>
+                </div>
+            </div>
+
+            <!-- SVG Demo 3 -->
+            <div class="demo-showcase">
+                <div class="demo-header">
+                    <div class="demo-title" data-i18n="svg_demo3_title">Demo 3: Space Shooter HUD Interface</div>
+                    <p class="demo-prompt" data-i18n="svg_demo3_prompt">
+                        生成一个静态 SVG，展示太空射击游戏的 HUD 界面 - 星空背景、敌机锁定框、生命值条、弹药计数、雷达圆盘
+                    </p>
+                </div>
+                <div class="demo-iframe-container">
+                    <iframe src="./demo/svg/demo3.html" class="demo-iframe" title="Space Shooter HUD"></iframe>
+                </div>
+            </div>
+
+            <!-- SVG Demo 4 -->
+            <div class="demo-showcase">
+                <div class="demo-header">
+                    <div class="demo-title" data-i18n="svg_demo4_title">Demo 4: Energy Core - Sci-Fi Abstract Geometry</div>
+                    <p class="demo-prompt" data-i18n="svg_demo4_prompt">
+                        能量核心 - 科幻风格抽象几何图形。中心发光圆环，外围旋转圆形，最外层轨道小圆点，青紫渐变辉光效果，多层不同速度旋转动画
+                    </p>
+                </div>
+                <div class="demo-iframe-container">
+                    <iframe src="./demo/svg/demo5.html" class="demo-iframe" title="Energy Core"></iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p class="copyright" data-i18n="footer_copyright">
+                © 2026 IQuest Coder Group. All rights reserved.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        const SHARED_LANG_KEY = "iquest.lang";
+        const PAGE_TITLE = "IQuest-Coder-V1: Releasing 7B/14B Family Models and 40B-Thinking Models";
+        const I18N = {
+            en: {
+                lang_button: "中 / EN",
+                lang_to_zh: "Switch to Chinese",
+                lang_to_en: "Switch to English",
+                hero_highlight: "7B/14B Family Models and 40B-Thinking Models",
+                cta_view_all: "View All on Hugging Face",
+                cta_benchmarks: "View Benchmarks",
+                advantages_title: "Why 7B/14B Models?",
+                feature_fast_title: "Shallow Architecture, Ultra-Fast Inference",
+                feature_fast_desc: "7B model with only 14 layers, 14B with 28 layers (vs. 40B's 80 layers), dramatically reducing inference latency to real-time interaction levels.",
+                feature_cli_title: "CLI Agent Integration",
+                feature_cli_desc: "Successfully deployed and tested on ClaudeCode and OpenCode platforms, supporting command-line interactive programming assistance.",
+                feature_html_svg_title: "HTML & SVG Generation",
+                feature_html_svg_desc: "Preliminary HTML webpage and SVG graphics generation capabilities for rapid visual application development.",
+                benchmarks_title: "Performance Comparison",
+                benchmarks_intro: "Complete benchmark results across all model sizes from model-performance data.",
+                benchmarks_core_title: "Basic Coding Benchmarks",
+                benchmarks_reasoning_title: "Code Understanding & Reasoning",
+                benchmarks_multilang_title: "LiveCodeBench & Multi-Language Support",
+                benchmarks_terminal_title: "Terminal & Agent Capabilities",
+                benchmarks_function_calling_title: "Function Calling & Coding Efficiency",
+                demos_title: "Demo Showcases",
+                demos_intro: "Live demonstrations of 7B/14B/40B models' capabilities: CLI agent integration, HTML generation, and SVG graphics.",
+                cli_demo_title: "CLI Demo: Claude Code & OpenClaw",
+                cli_demo_prompt: "<strong>Demos 1-4:</strong> Claude Code Integration | <strong>Demo 5:</strong> OpenClaw Computer Use",
+                cli_tab_1: "Demo 1: Bug Fix",
+                cli_tab_2: "Demo 2: Log Analysis",
+                cli_tab_3: "Demo 3: Log Extraction",
+                cli_tab_4: "Demo 4: Pomodoro",
+                cli_tab_5: "Demo 5: OpenClaw",
+                cli_demo1_title: "Demo 1: Multi-Agent Bug Fix (Claude Code)",
+                cli_demo2_title: "Demo 2: Log Analysis (Claude Code)",
+                cli_demo3_title: "Demo 3: Log Extraction & Validation (Claude Code)",
+                cli_demo4_title: "Demo 4: Pomodoro Timer (Claude Code)",
+                cli_demo5_prompt: "OpenClaw - Computer Use Demo: Autonomous agent using Claude Code API to control desktop applications and complete real-world tasks",
+                cli_demo1_desc_7b_instruct: "Fast inference for multi-agent system debugging",
+                cli_demo1_desc_7b_thinking: "Reasoning with compact model",
+                cli_demo1_desc_14b_instruct: "Balanced performance for complex bug fixing",
+                cli_demo1_desc_14b_thinking: "Reasoning traces for deep code understanding",
+                cli_demo1_desc_40b_thinking: "Maximum capability for sophisticated problem-solving",
+                cli_demo2_desc_7b_instruct: "Log analysis and data visualization",
+                cli_demo2_desc_7b_thinking: "Data extraction with reasoning",
+                cli_demo2_desc_14b_instruct: "Enhanced log parsing capabilities",
+                cli_demo2_desc_14b_thinking: "Analytical reasoning for log processing",
+                cli_demo2_desc_40b_thinking: "Advanced analytical reasoning",
+                cli_demo3_desc_7b_instruct: "Error extraction and validation",
+                cli_demo3_desc_7b_thinking: "Structured error processing",
+                cli_demo3_desc_14b_instruct: "Advanced error extraction",
+                cli_demo3_desc_14b_thinking: "Comprehensive error handling",
+                cli_demo3_desc_40b_thinking: "Expert-level validation logic",
+                cli_demo4_desc_7b_instruct: "Quick web app generation",
+                cli_demo4_desc_7b_thinking: "Structured UI planning",
+                cli_demo4_desc_14b_instruct: "Web application generation",
+                cli_demo4_desc_14b_thinking: "Feature-rich timer implementation",
+                cli_demo4_desc_40b_thinking: "Full-featured Pomodoro timer app",
+                cli_demo5_model: "OpenClaw Demo",
+                cli_demo5_desc: "Real-world computer use automation with Claude Code API",
+                footer_technical_report: "Technical Report",
+                footer_copyright: "© 2026 IQuest Coder Group. All rights reserved.",
+                html_demos_title: "HTML Demos: Single-File Web Applications",
+                html_demo1_title: "Demo 1: Neon Pixel Runner Game",
+                html_demo2_title: "Demo 2: Neural Network Visualization (Three.js)",
+                svg_demos_title: "SVG Demos: Vector Graphics & Animations",
+                svg_demo1_title: "Demo 1: Cyberpunk Radar Animation",
+                svg_demo3_title: "Demo 3: Space Shooter HUD Interface",
+                svg_demo4_title: "Demo 4: Energy Core - Sci-Fi Abstract Geometry",
+                highlights_title: "IQuest-Coder-V1 Highlights",
+                highlights_intro: "A new family of code large language models designed to advance autonomous software engineering and code intelligence.",
+                highlights_item1_title: "Leading Performance",
+                highlights_item1_desc: "Achieves solid performance in agentic software engineering, competitive programming, and complex tool-use scenarios.",
+                highlights_item2_title: "Code-Flow Training Paradigm",
+                highlights_item2_desc: "Moving beyond static code representations, our models learn from repository evolution patterns, commit transitions, and dynamic code transformations to understand real-world software development processes.",
+                highlights_item3_title: "Dual Specialization Paths",
+                highlights_item3_desc: "Bifurcated post-training delivers two specialized variants—Thinking models (utilizing reasoning-driven RL for complex problem-solving) and Instruct models (optimized for general coding assistance and instruction-following).",
+                highlights_item4_title: "Loop Architecture",
+                highlights_item4_desc: "IQuest-Coder-V1-Loop adopts a recurrent mechanism to achieve a better balance between model capacity and deployment overhead.",
+                highlights_item5_title: "Native Long Context",
+                highlights_item5_desc: "All models natively support up to 128K tokens without requiring additional scaling techniques.",
+                highlights_item6_title: "CLI Agent Integration",
+                highlights_item6_desc: "Demonstrates initial deployment capabilities on ClaudeCode and OpenCode platforms, with the ability to integrate into CLI-based agent workflows.",
+                highlights_item7_title: "HTML and SVG Generation",
+                highlights_item7_desc: "Features preliminary support for HTML webpage and SVG graphics code generation.",
+                highlights_loop_arch_title: "Architecture-Level Chain-of-Thought via Recurrent Depth",
+                highlights_loop_arch_desc: "40B-Loop-Thinking is an experimental model prototype designed to explore how structural chain-of-thought and procedural chain-of-thought can collaborate within one system. The model combines structural chain-of-thought with procedural chain-of-thought. Loop-Thinking adopts a recurrent Transformer design that introduces implicit multi-step computation at the architectural level. This creates a nested reasoning mechanism, and the model is used to validate the complementarity between recurrent computation and reasoning-oriented training in reasoning structure, providing experimental evidence for subsequent model design.",
+                technical_report: "Technical Report",
+                back_home: "Back to Home",
+                demo1_prompt: "Multi-agent bug fixing - Task 1: Fix context truncation bug (code reading, bug localization, data structure understanding) | Task 2: Parameter validation + new tool (feature implementation, security awareness, schema handling)",
+                demo2_prompt: "Analyze log files, extract key metrics (loss), and plot a line chart.",
+                demo3_prompt: "Ask the agent to extract error entries from server logs into a JSON file, then write a Python test script to validate JSON schema and completeness.",
+                demo4_prompt: "Generate a Pomodoro timer website.",
+                html_demo1_prompt: "Cyberpunk-style pixel runner game - avoid obstacles and reach a high score.",
+                html_demo2_prompt: "Generate a neural network visualization page in single-file HTML with Three.js: layered network structure, flowing signal particles, cascading node activations, and a cyberpunk-style UI.",
+                svg_demo1_prompt: "Draw a cyberpunk radar ripple effect in SVG.",
+                svg_demo3_prompt: "Generate a static SVG showing a space shooter HUD interface - starfield background, enemy lock-on frame, HP bar, ammo counter, and radar disc.",
+                svg_demo4_prompt: "Energy Core - Sci-fi abstract geometry. Glowing center ring, rotating outer circles, orbiting outer dots, cyan-purple gradient glow, and multi-layer rotational animations at different speeds.",
+                release_nav_advantages: "Advantages",
+                release_nav_highlights: "Highlights",
+                release_nav_benchmark_visual: "Benchmark Highlights",
+                release_nav_benchmarks: "Performance Comparison",
+                release_nav_demos: "Demo Showcases",
+                release_nav_expand: "Expand section navigation",
+                release_nav_collapse: "Collapse section navigation",
+                benchmark_visual_title: "Benchmark Highlights",
+                benchmark_visual_intro: "Performance snapshot across SWE-Bench Verified, BigCodeBench, LiveCodeBench v5, LiveCodeBench v6, SWE-Multi, and Tau-Bench Avg."
+            },
+            zh: {
+                lang_button: "中 / EN",
+                lang_to_zh: "切换到中文",
+                lang_to_en: "切换到英文",
+                hero_highlight: "7B/14B Family Models and 40B-Thinking Models",
+                cta_view_all: "在 Hugging Face 查看全部",
+                cta_benchmarks: "查看基准表现",
+                advantages_title: "为什么选择 7B/14B 模型？",
+                feature_fast_title: "浅层架构，超快推理",
+                feature_fast_desc: "7B 仅 14 层、14B 仅 28 层（对比 40B 的 80 层），显著降低推理时延，达到实时交互级别。",
+                feature_cli_title: "CLI Agent 集成",
+                feature_cli_desc: "已在 ClaudeCode 与 OpenCode 平台完成部署与测试，支持命令行交互式编程辅助。",
+                feature_html_svg_title: "HTML 与 SVG 生成",
+                feature_html_svg_desc: "具备初步 HTML 网页与 SVG 图形生成能力，可快速用于可视化应用开发。",
+                benchmarks_title: "性能对比",
+                benchmarks_intro: "来自模型性能数据的全尺寸模型基准结果汇总。",
+                benchmarks_core_title: "基础代码基准",
+                benchmarks_reasoning_title: "代码理解与推理",
+                benchmarks_multilang_title: "LiveCodeBench 与多语言支持",
+                benchmarks_terminal_title: "终端与智能体能力",
+                benchmarks_function_calling_title: "函数调用与代码效率",
+                demos_title: "演示展示",
+                demos_intro: "展示 7B/14B/40B 模型在 CLI 智能体集成、HTML 生成和 SVG 图形生成方面的能力。",
+                cli_demo_title: "CLI 演示：Claude Code 与 OpenClaw",
+                cli_demo_prompt: "<strong>演示 1-4：</strong>Claude Code 集成 | <strong>演示 5：</strong>OpenClaw 计算机使用",
+                cli_tab_1: "演示 1：Bug 修复",
+                cli_tab_2: "演示 2：日志分析",
+                cli_tab_3: "演示 3：日志提取",
+                cli_tab_4: "演示 4：番茄钟",
+                cli_tab_5: "演示 5：OpenClaw",
+                cli_demo1_title: "演示 1：多智能体 Bug 修复（Claude Code）",
+                cli_demo2_title: "演示 2：日志分析（Claude Code）",
+                cli_demo3_title: "演示 3：日志提取与校验（Claude Code）",
+                cli_demo4_title: "演示 4：番茄钟（Claude Code）",
+                cli_demo5_prompt: "OpenClaw - 计算机使用演示：通过 Claude Code API 自主控制桌面应用并完成真实任务",
+                cli_demo1_desc_7b_instruct: "快速推理，适合多智能体系统调试",
+                cli_demo1_desc_7b_thinking: "紧凑模型下的推理能力展示",
+                cli_demo1_desc_14b_instruct: "复杂 Bug 修复中的均衡性能表现",
+                cli_demo1_desc_14b_thinking: "深层代码理解所需的推理轨迹",
+                cli_demo1_desc_40b_thinking: "用于复杂问题求解的最高能力",
+                cli_demo2_desc_7b_instruct: "日志分析与数据可视化",
+                cli_demo2_desc_7b_thinking: "带推理过程的数据提取",
+                cli_demo2_desc_14b_instruct: "更强的日志解析能力",
+                cli_demo2_desc_14b_thinking: "面向日志处理的分析式推理",
+                cli_demo2_desc_40b_thinking: "高级分析推理能力",
+                cli_demo3_desc_7b_instruct: "错误提取与校验",
+                cli_demo3_desc_7b_thinking: "结构化错误处理",
+                cli_demo3_desc_14b_instruct: "高级错误信息提取",
+                cli_demo3_desc_14b_thinking: "更全面的错误处理能力",
+                cli_demo3_desc_40b_thinking: "专家级校验逻辑",
+                cli_demo4_desc_7b_instruct: "快速网页应用生成",
+                cli_demo4_desc_7b_thinking: "结构化 UI 规划能力",
+                cli_demo4_desc_14b_instruct: "网页应用生成能力",
+                cli_demo4_desc_14b_thinking: "功能更丰富的计时器实现",
+                cli_demo4_desc_40b_thinking: "全功能番茄钟应用",
+                cli_demo5_model: "OpenClaw 演示",
+                cli_demo5_desc: "基于 Claude Code API 的真实场景计算机自动化",
+                footer_technical_report: "技术报告",
+                footer_copyright: "© 2026 IQuest Coder Group. 保留所有权利。",
+                html_demos_title: "HTML 演示：单文件 Web 应用",
+                html_demo1_title: "演示 1：霓虹像素跑酷游戏",
+                html_demo2_title: "演示 2：神经网络可视化（Three.js）",
+                svg_demos_title: "SVG 演示：矢量图形与动画",
+                svg_demo1_title: "演示 1：赛博朋克雷达动画",
+                svg_demo3_title: "演示 3：太空射击 HUD 界面",
+                svg_demo4_title: "演示 4：能量核心 - 科幻抽象几何",
+                highlights_title: "IQuest-Coder-V1 亮点",
+                highlights_intro: "面向自主软件工程与代码智能的新一代代码大语言模型系列。",
+                highlights_item1_title: "性能领先",
+                highlights_item1_desc: "在智能体软件工程、竞赛编程与复杂工具调用方面获得良好性能。",
+                highlights_item2_title: "Code-Flow 训练范式",
+                highlights_item2_desc: "突破静态代码表示，模型从仓库演化模式、提交迁移和动态代码变换中学习，更贴近真实软件开发过程。",
+                highlights_item3_title: "双路径能力专精",
+                highlights_item3_desc: "通过分叉式后训练得到两类专精模型——Thinking（基于推理驱动 RL，解决复杂问题）与 Instruct（面向通用代码协助和指令跟随）。",
+                highlights_item4_title: "Loop架构",
+                highlights_item4_desc: "IQuest-Coder-V1-Loop 采用循环机制，在模型容量与部署开销间实现更优权衡。",
+                highlights_item5_title: "原生长上下文",
+                highlights_item5_desc: "所有模型原生支持最高 128K 上下文，无需额外上下文扩展技巧。",
+                highlights_item6_title: "CLI Agent 集成",
+                highlights_item6_desc: "已在 ClaudeCode 与 OpenCode 平台完成初步部署验证，支持接入基于命令行的智能体工作流。",
+                highlights_item7_title: "HTML 与 SVG 生成",
+                highlights_item7_desc: "具备初步的 HTML 网页与 SVG 图形代码生成能力。",
+                highlights_loop_arch_title: "通过循环深度实现的架构级思维链",
+                highlights_loop_arch_desc: "40B-Loop-Thinking 是一个实验性的模型原型，用于探索结构性思维链与过程性思维链在同一系统中的协同方式。该模型结合了结构性思维链与过程性思维链。Loop-Thinking 采用循环 Transformer 设计，在架构层面引入隐式的多步计算。由此形成一种嵌套式推理机制，该模型用于验证循环计算与推理训练在推理结构上的互补性，为后续模型设计提供实验依据。",
+                technical_report: "技术报告",
+                back_home: "返回首页",
+                demo1_prompt: "多agent系统修复 - Task 1: 修复上下文截断 Bug → 代码阅读、Bug 定位、数据结构理解 | Task 2: 参数校验 + 新工具 → 功能实现、安全意识、Schema 处理",
+                demo2_prompt: "分析log文件，提取关键信息（loss），并绘制折线图",
+                demo3_prompt: "让 Agent 从服务器日志中提取错误信息保存为 JSON 文件，随后编写一个 Python 测试脚本来校验该 JSON 文件的数据格式与完整性",
+                demo4_prompt: "生成番茄钟网站",
+                html_demo1_prompt: "赛博朋克风格的像素跑酷游戏 - 躲避障碍物，获得高分",
+                html_demo2_prompt: "生成一个神经网络可视化页面，单文件 HTML，使用 Three.js：分层神经网络结构，信号粒子流动传播，节点激活级联，赛博朋克风格 UI",
+                svg_demo1_prompt: "用svg画一个赛博朋克的雷达波纹",
+                svg_demo3_prompt: "生成一个静态 SVG，展示太空射击游戏的 HUD 界面 - 星空背景、敌机锁定框、生命值条、弹药计数、雷达圆盘",
+                svg_demo4_prompt: "能量核心 - 科幻风格抽象几何图形。中心发光圆环，外围旋转圆形，最外层轨道小圆点，青紫渐变辉光效果，多层不同速度旋转动画",
+                release_nav_advantages: "核心优势",
+                release_nav_highlights: "版本亮点",
+                release_nav_benchmark_visual: "基准表现",
+                release_nav_benchmarks: "性能对比",
+                release_nav_demos: "演示展示",
+                release_nav_expand: "展开分区导航",
+                release_nav_collapse: "收起分区导航",
+                benchmark_visual_title: "基准表现",
+                benchmark_visual_intro: "覆盖 SWE-Bench Verified、BigCodeBench、LiveCodeBench v5、LiveCodeBench v6、SWE-Multi 与 Tau-Bench Avg 的整体性能快照。"
+            }
+        };
+
+        const i18nNodes = Array.from(document.querySelectorAll("[data-i18n]"));
+        let currentLang = "en";
+
+        function applyLanguage(lang) {
+            const table = I18N[lang] || I18N.en;
+            document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+            document.title = PAGE_TITLE;
+            i18nNodes.forEach((el) => {
+                const key = el.getAttribute("data-i18n");
+                if (table[key]) {
+                    if (el.innerHTML !== table[key]) {
+                        el.innerHTML = table[key];
+                    }
+                }
+            });
+
+            const toggleBtn = document.getElementById("lang-toggle-btn");
+            if (toggleBtn) {
+                toggleBtn.textContent = table.lang_button;
+                toggleBtn.setAttribute("aria-label", lang === "en" ? table.lang_to_zh : table.lang_to_en);
+                toggleBtn.setAttribute("title", lang === "en" ? table.lang_to_zh : table.lang_to_en);
+            }
+
+            const sectionNav = document.querySelector(".release-section-nav");
+            const sectionToggle = document.getElementById("release-nav-toggle");
+            if (sectionNav && sectionToggle) {
+                const collapsed = sectionNav.classList.contains("is-collapsed");
+                const label = collapsed ? table.release_nav_expand : table.release_nav_collapse;
+                sectionToggle.setAttribute("aria-label", label);
+                sectionToggle.setAttribute("title", label);
+            }
+            currentLang = lang;
+        }
+
+        function initLanguageToggle() {
+            let saved = null;
+            try {
+                saved = localStorage.getItem(SHARED_LANG_KEY);
+            } catch (e) {
+                saved = null;
+            }
+            const initialLang = saved === "zh" || saved === "en" ? saved : "en";
+            try {
+                localStorage.setItem(SHARED_LANG_KEY, initialLang);
+            } catch (e) {
+                // ignore storage failures (e.g. privacy mode)
+            }
+            applyLanguage(initialLang);
+
+            const toggleBtn = document.getElementById("lang-toggle-btn");
+            if (!toggleBtn) return;
+            toggleBtn.addEventListener("click", () => {
+                if (toggleBtn.disabled) return;
+                toggleBtn.disabled = true;
+                window.requestAnimationFrame(() => {
+                    const next = currentLang === "en" ? "zh" : "en";
+                    try {
+                        localStorage.setItem(SHARED_LANG_KEY, next);
+                    } catch (e) {
+                        // ignore storage failures (e.g. privacy mode)
+                    }
+                    applyLanguage(next);
+                    toggleBtn.disabled = false;
+                });
+            });
+        }
+
+        initLanguageToggle();
+
+        const releaseSectionIds = ["advantages", "highlights", "benchmark-visual", "benchmarks", "demos"];
+
+        function setActiveReleaseSection(sectionId) {
+            const links = document.querySelectorAll(".release-section-link");
+            links.forEach((link) => {
+                const active = link.getAttribute("data-section-link") === sectionId;
+                link.classList.toggle("is-active", active);
+                if (active) {
+                    link.setAttribute("aria-current", "true");
+                } else {
+                    link.removeAttribute("aria-current");
+                }
+            });
+        }
+
+        function initReleaseSectionNav() {
+            const nav = document.querySelector(".release-section-nav");
+            const toggle = document.getElementById("release-nav-toggle");
+            const links = Array.from(document.querySelectorAll(".release-section-link"));
+            if (!links.length || !nav || !toggle) return;
+
+            const updateToggleState = () => {
+                const collapsed = nav.classList.contains("is-collapsed");
+                toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+                toggle.textContent = collapsed ? "☰" : "✕";
+                const table = I18N[currentLang] || I18N.en;
+                const label = collapsed ? table.release_nav_expand : table.release_nav_collapse;
+                toggle.setAttribute("aria-label", label);
+                toggle.setAttribute("title", label);
+            };
+
+            toggle.addEventListener("click", () => {
+                nav.classList.toggle("is-collapsed");
+                updateToggleState();
+            });
+
+            links.forEach((link) => {
+                link.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const sectionId = link.getAttribute("data-section-link");
+                    const section = sectionId ? document.getElementById(sectionId) : null;
+                    if (!section) return;
+
+                    const target =
+                        section.querySelector(".section-title") ||
+                        section.querySelector(".subsection-title") ||
+                        section;
+                    const header = document.querySelector("header");
+                    const headerH = header ? header.getBoundingClientRect().height : 0;
+                    const y = target.getBoundingClientRect().top + window.scrollY - headerH - 12;
+                    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+                    setActiveReleaseSection(sectionId);
+                });
+            });
+
+            let raf = 0;
+            const updateActive = () => {
+                raf = 0;
+                const header = document.querySelector("header");
+                const headerH = header ? header.getBoundingClientRect().height : 0;
+                const markerY = headerH + 24;
+                let active = releaseSectionIds[0];
+
+                for (let i = releaseSectionIds.length - 1; i >= 0; i--) {
+                    const id = releaseSectionIds[i];
+                    const section = document.getElementById(id);
+                    if (!section) continue;
+                    const rect = section.getBoundingClientRect();
+                    if (rect.top <= markerY && rect.bottom > markerY) {
+                        active = id;
+                        break;
+                    }
+                }
+
+                setActiveReleaseSection(active);
+            };
+
+            const onScrollOrResize = () => {
+                if (raf) return;
+                raf = window.requestAnimationFrame(updateActive);
+            };
+
+            window.addEventListener("scroll", onScrollOrResize, { passive: true });
+            window.addEventListener("resize", onScrollOrResize);
+            updateActive();
+            updateToggleState();
+        }
+
+        function setVideoSourceState(video, shouldAttach) {
+            const source = video.querySelector("source");
+            if (!source) return;
+
+            const currentSrc = source.getAttribute("src");
+            if (!source.dataset.src && currentSrc) {
+                source.dataset.src = currentSrc;
+            }
+
+            if (shouldAttach) {
+                if (!source.getAttribute("src") && source.dataset.src) {
+                    source.setAttribute("src", source.dataset.src);
+                    video.load();
+                }
+                return;
+            }
+
+            if (source.getAttribute("src")) {
+                video.pause();
+                source.removeAttribute("src");
+                video.load();
+            }
+        }
+
+        function updateCliDemoVideoSources(activeDemoId) {
+            document.querySelectorAll(".video-section").forEach((section) => {
+                const shouldAttach = section.id === activeDemoId;
+                section.querySelectorAll("video").forEach((video) => {
+                    video.preload = "none";
+                    setVideoSourceState(video, shouldAttach);
+                });
+            });
+        }
+
+        function initCliDemoVideoOptimization() {
+            const visibleSection = Array.from(document.querySelectorAll(".video-section"))
+                .find((section) => getComputedStyle(section).display !== "none");
+            updateCliDemoVideoSources(visibleSection?.id || "demo1");
+        }
+
+        function initDemoIframeLazyLoad() {
+            const iframes = Array.from(document.querySelectorAll(".demo-iframe"));
+            if (!iframes.length) return;
+
+            iframes.forEach((iframe) => {
+                const src = iframe.getAttribute("src");
+                if (src) {
+                    iframe.dataset.src = src;
+                    iframe.removeAttribute("src");
+                }
+                iframe.setAttribute("loading", "lazy");
+            });
+
+            const iframeObserver = new IntersectionObserver((entries, obs) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const iframe = entry.target;
+                    const src = iframe.dataset.src;
+                    if (src && !iframe.getAttribute("src")) {
+                        iframe.setAttribute("src", src);
+                    }
+                    obs.unobserve(iframe);
+                });
+            }, {
+                root: null,
+                threshold: 0.01,
+                rootMargin: "600px 0px",
+            });
+
+            iframes.forEach((iframe) => iframeObserver.observe(iframe));
+        }
+
+        // Video demo switching
+        function showDemo(demoId, event) {
+            // Hide all video sections
+            document.querySelectorAll('.video-section').forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // Remove active class from all tabs
+            document.querySelectorAll('.video-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected section
+            const selectedSection = document.getElementById(demoId);
+            if (selectedSection) {
+                selectedSection.style.display = 'block';
+            }
+
+            // Add active class to clicked tab
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+
+            // Pause all videos and keep source only for active demo
+            document.querySelectorAll('video').forEach(video => {
+                video.pause();
+            });
+            updateCliDemoVideoSources(demoId);
+        }
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                if (this.classList.contains("release-section-link")) return;
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const header = document.querySelector("header");
+                    const headerH = header ? header.getBoundingClientRect().height : 0;
+                    const y = target.getBoundingClientRect().top + window.scrollY - headerH - 12;
+                    window.scrollTo({
+                        top: Math.max(0, y),
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Intersection Observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !entry.target.classList.contains('animated')) {
+                    entry.target.classList.add('animated');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        // Observe all fade-in elements after page load
+        window.addEventListener('load', () => {
+            initReleaseSectionNav();
+            initCliDemoVideoOptimization();
+            initDemoIframeLazyLoad();
+            document.querySelectorAll('.fade-in').forEach(el => {
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+</html>
