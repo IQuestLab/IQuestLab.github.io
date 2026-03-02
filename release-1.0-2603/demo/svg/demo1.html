@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberpunk Radar Wave | 赛博朋克雷达</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+        body {
+            background-color: #050505;
+            color: #0ff;
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        /* CRT Scanline Effect */
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* Panel Styling */
+        .cyber-panel {
+            background: rgba(10, 10, 15, 0.85);
+            border: 1px solid #0ff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cyber-panel::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff00ff, #00ffff, #ff00ff);
+            z-index: -1;
+            opacity: 0.3;
+            filter: blur(10px);
+        }
+
+        .cyber-btn {
+            background: transparent;
+            border: 1px solid #0ff;
+            color: #0ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cyber-btn:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 15px #0ff;
+        }
+
+        .cyber-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+
+        .cyber-btn:hover::before {
+            left: 100%;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: transparent;
+            color: #0ff;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            background: #ff00ff;
+            margin-top: -6px;
+            box-shadow: 0 0 10px #ff00ff;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border: 1px solid #0ff;
+        }
+
+        /* SVG Specifics */
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .glitch-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            fill: #fff;
+            text-shadow: 2px 0 #ff00ff, -2px 0 #00ffff;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- CRT Overlay -->
+    <div class="scanlines"></div>
+
+    <!-- Main SVG Canvas -->
+    <div id="radar-wrapper" class="absolute inset-0 z-0 flex items-center justify-center bg-black overflow-hidden">
+        <svg id="main-svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+            <defs>
+                <!-- Filters -->
+                <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+                
+                <filter id="intense-glow" x="-100%" y="-100%" width="300%" height="300%">
+                    <feGaussianBlur stdDeviation="8" result="blur"/>
+                    <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                </filter>
+
+                <filter id="glitch-filter">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="1" result="noise" seed="1">
+                        <animate attributeName="seed" from="1" to="100" dur="0.5s" repeatCount="indefinite" />
+                    </feTurbulence>
+                    <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" />
+                </filter>
+
+                <!-- Gradients -->
+                <radialGradient id="radial-gradient" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="rgba(0,255,255,0.1)" />
+                    <stop offset="80%" stop-color="rgba(255,0,255,0.05)" />
+                    <stop offset="100%" stop-color="rgba(0,0,0,0.8)" />
+                </radialGradient>
+
+                <linearGradient id="wave-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00ffff" stop-opacity="0" />
+                    <stop offset="50%" stop-color="#00ffff" stop-opacity="0.8" />
+                    <stop offset="100%" stop-color="#00ffff" stop-opacity="0" />
+                </linearGradient>
+
+                <!-- Patterns -->
+                <pattern id="grid-pattern" width="100" height="100" patternUnits="userSpaceOnUse">
+                    <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#00ffff" stroke-width="0.5" opacity="0.2"/>
+                </pattern>
+            </defs>
+
+            <!-- Background -->
+            <rect width="100%" height="100%" fill="#050505" />
+            <rect width="100%" height="100%" fill="url(#grid-pattern)" id="grid-background" />
+            
+            <!-- Radial Center Darkness -->
+            <circle cx="960" cy="540" r="400" fill="url(#radial-gradient)" />
+
+            <!-- Radar Waves Group -->
+            <g id="radar-layer" transform="translate(960, 540)" filter="url(#neon-glow)">
+                <!-- Static rings -->
+                <circle r="350" fill="none" stroke="#ff00ff" stroke-width="2" stroke-dasharray="20,10" opacity="0.6">
+                    <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="60s" repeatCount="indefinite"/>
+                </circle>
+                <circle r="370" fill="none" stroke="#00ffff" stroke-width="1" stroke-dasharray="5,15" opacity="0.4">
+                    <animateTransform attributeName="transform" type="rotate" from="360 0 0" to="0 0 0" dur="45s" repeatCount="indefinite"/>
+                </circle>
+                
+                <!-- Radial Sweep -->
+                <g id="scan-beam" opacity="0.8">
+                    <path d="M -20 0 A 350 350 0 0 1 20 0 Z" fill="url(#wave-gradient)" stroke="#00ffff" stroke-width="2">
+                        <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="4s" repeatCount="indefinite"/>
+                    </path>
+                </g>
+
+                <!-- Rotating Connectors -->
+                <g>
+                    <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="12s" repeatCount="indefinite"/>
+                    <line x1="0" y1="0" x2="250" y2="0" stroke="#ff00ff" stroke-width="2" stroke-dasharray="8,4">
+                        <animate attributeName="stroke-dashoffset" from="0" to="1000" dur="5s" repeatCount="indefinite"/>
+                    </line>
+                    <circle r="5" fill="#fff" filter="url(#intense-glow)">
+                        <animate attributeName="r" values="3;8;3" dur="1s" repeatCount="indefinite"/>
+                    </circle>
+                </g>
+
+                <!-- Pulsing Dots -->
+                <g id="pulse-dots">
+                    <circle cx="200" cy="200" r="3" fill="#0ff">
+                        <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle cx="-150" cy="100" r="4" fill="#f0f">
+                        <animate attributeName="opacity" values="0;1;0" dur="3s" begin="1s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle cx="180" cy="-120" r="2" fill="#0ff">
+                        <animate attributeName="opacity" values="0;1;0" dur="2.5s" begin="0.5s" repeatCount="indefinite"/>
+                    </circle>
+                </g>
+            </g>
+
+            <!-- Glitch Text -->
+            <g transform="translate(960, 100)" text-anchor="middle">
+                <text x="0" y="0" class="glitch-text" font-size="60" filter="url(#glitch-filter)">
+                    SYSTEM_SCAN
+                    <animate attributeName="x" values="0;-5;5;0;-5;0" dur="0.2s" repeatCount="indefinite"/>
+                </text>
+            </g>
+
+            <!-- Corner Decorations -->
+            <g id="corners" stroke="#0ff" stroke-width="2" fill="none" opacity="0.8">
+                <path d="M 50 50 L 200 50 L 200 100" />
+                <path d="M 1870 50 L 1720 50 L 1720 100" />
+                <path d="M 50 1030 L 200 1030 L 200 980" />
+                <path d="M 1870 1030 L 1720 1030 L 1720 980" />
+            </g>
+
+            <!-- Scan Line Animation -->
+            <rect id="scan-overlay" x="0" y="0" width="100%" height="20" fill="rgba(0, 255, 255, 0.1)">
+                <animateTransform attributeName="transform" type="translate" 
+                    values="0; -100%" 
+                    dur="8s" 
+                    repeatCount="indefinite" />
+            </rect>
+        </svg>
+    </div>
+
+    <!-- UI Control Panel -->
+    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50 cyber-panel w-11/12 max-w-4xl p-6 rounded-lg flex flex-wrap items-center justify-between gap-6">
+        
+        <!-- Header -->
+        <div class="flex items-center gap-2">
+            <div class="w-3 h-3 bg-pink-500 rounded-full animate-pulse shadow-[0_0_10px_#ff00ff]"></div>
+            <h2 class="text-xl font-bold tracking-widest text-cyan-400">RADAR_CONTROL</h2>
+        </div>
+
+        <!-- Controls Container -->
+        <div class="flex flex-wrap items-center gap-6 justify-center w-full md:w-auto">
+            
+            <!-- Preset Buttons -->
+            <div class="flex gap-3">
+                <button onclick="setTheme('cyber')" class="cyber-btn px-4 py-2 text-sm font-bold rounded">
+                    CYBER
+                </button>
+                <button onclick="setTheme('matrix')" class="cyber-btn px-4 py-2 text-sm font-bold rounded">
+                    MATRIX
+                </button>
+                <button onclick="setTheme('gold')" class="cyber-btn px-4 py-2 text-sm font-bold rounded border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black" style="color: #ffff00; border-color: #ffff00;">
+                    GOLD
+                </button>
+            </div>
+
+            <!-- Sliders -->
+            <div class="flex flex-col gap-1 w-32">
+                <label class="text-xs text-cyan-300 flex justify-between">
+                    <span>SPEED</span>
+                    <span id="speed-val">1.0x</span>
+                </label>
+                <input type="range" id="speed-control" min="0.1" max="3" step="0.1" value="1" 
+                    oninput="updateSpeed(this.value)">
+            </div>
+
+            <div class="flex flex-col gap-1 w-32">
+                <label class="text-xs text-pink-500 flex justify-between">
+                    <span>PULSE</span>
+                    <span id="pulse-val">50%</span>
+                </label>
+                <input type="range" id="pulse-control" min="0" max="1" step="0.1" value="0.8" 
+                    oninput="updateOpacity(this.value)">
+            </div>
+
+            <!-- Toggles -->
+            <div class="flex items-center gap-3 bg-black/30 p-2 rounded border border-gray-800">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="grid-toggle" checked onchange="toggleGrid()" class="w-4 h-4 accent-cyan-500 border-cyan-500 text-cyan-500 rounded focus:ring-cyan-500 focus:ring-offset-black">
+                    <span class="text-xs font-bold text-cyan-400">GRID</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="ticks-toggle" checked onchange="toggleTicks()" class="w-4 h-4 accent-pink-500 border-pink-500 text-pink-500 rounded focus:ring-pink-500 focus:ring-offset-black">
+                    <span class="text-xs font-bold text-pink-500">SCAN</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Status Display -->
+        <div class="hidden md:block w-48 text-right border-r border-cyan-900 pr-6">
+            <div class="text-xs text-cyan-600">STATUS</div>
+            <div class="text-cyan-400 animate-pulse">ONLINE</div>
+            <div class="text-xs text-pink-600 mt-1" id="coord-display">X: 960 | Y: 540</div>
+        </div>
+    </div>
+
+    <!-- Corner Decorations JS -->
+    <div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyan-500"></div>
+    <div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-500"></div>
+    <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-cyan-500"></div>
+    <div class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-cyan-500"></div>
+
+    <script>
+        // Configuration
+        const svg = document.getElementById('main-svg');
+        const radarLayer = document.getElementById('radar-layer');
+        const scanOverlay = document.getElementById('scan-overlay');
+        const coordDisplay = document.getElementById('coord-display');
+        
+        // State
+        let speed = 1;
+        let opacity = 0.8;
+        let theme = 'cyber';
+        
+        // Mouse Tracking
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) * 100;
+            const y = (e.clientY / window.innerHeight) * 100;
+            coordDisplay.textContent = `X: ${Math.floor(e.clientX / 1920 * 100)}% | Y: ${Math.floor(e.clientY / 1080 * 100)}%`;
+            
+            // Slight parallax effect on radar
+            const moveX = (100 - x) / 200;
+            const moveY = (100 - y) / 200;
+            radarLayer.setAttribute('transform', `translate(${960 + moveX}, ${540 + moveY})`);
+        });
+
+        // Feature: Add dynamic blips
+        setInterval(() => {
+            if (Math.random() > 0.7) {
+                createBlip();
+            }
+        }, 1000);
+
+        function createBlip() {
+            const time = new Date().getTime();
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 80 + Math.random() * 200;
+            const x = Math.cos(angle) * dist;
+            const y = Math.sin(angle) * dist;
+            const color = Math.random() > 0.5 ? '#00ffff' : '#ff00ff';
+            
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', x);
+            circle.setAttribute('cy', y);
+            circle.setAttribute('r', '3');
+            circle.setAttribute('fill', color);
+            circle.setAttribute('class', 'radar-blip');
+            
+            // Animate using SMIL (moving outward)
+            const animR = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+            animR.setAttribute('attributeName', 'r');
+            animR.setAttribute('from', '3');
+            animR.setAttribute('to', '15');
+            animR.setAttribute('dur', '1s');
+            animR.setAttribute('fill', 'freeze');
+            
+            const animOp = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+            animOp.setAttribute('attributeName', 'opacity');
+            animOp.setAttribute('from', '1');
+            animOp.setAttribute('to', '0');
+            animOp.setAttribute('dur', '1s');
+            animOp.setAttribute('fill', 'freeze');
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (circle.parentNode) circle.parentNode.removeChild(circle);
+            }, 1000);
+            
+            circle.appendChild(animR);
+            circle.appendChild(animOp);
+            radarLayer.appendChild(circle);
+        }
+
+        function setTheme(themeName) {
+            theme = themeName;
+            const scanner = document.getElementById('scan-beam');
+            const stroke = scanner.querySelector('path').getAttribute('stroke');
+            
+            if (theme === 'matrix') {
+                scanner.querySelector('path').setAttribute('stroke', '#00ff00');
+                document.getElementById('grid-background').querySelector('pattern').querySelectorAll('path')[0].setAttribute('stroke', '#00ff00');
+                document.body.style.color = '#0f0';
+            } else if (theme === 'gold') {
+                scanner.querySelector('path').setAttribute('stroke', '#ffff00');
+                document.getElementById('grid-background').querySelector('pattern').querySelectorAll('path')[0].setAttribute('stroke', '#ffff00');
+                document.body.style.color = '#ff0';
+            } else {
+                scanner.querySelector('path').setAttribute('stroke', '#00ffff');
+                document.getElementById('grid-background').querySelector('pattern').querySelectorAll('path')[0].setAttribute('stroke', '#00ffff');
+                document.body.style.color = '#0ff';
+            }
+            
+            // Add flash effect
+            const flash = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            flash.setAttribute('width', '100%');
+            flash.setAttribute('height', '100%');
+            flash.setAttribute('fill', 'white');
+            flash.setAttribute('opacity', '0.3');
+            const fade = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+            fade.setAttribute('attributeName', 'opacity');
+            fade.setAttribute('from', '0.3');
+            fade.setAttribute('to', '0');
+            fade.setAttribute('dur', '0.3s');
+            fade.setAttribute('fill', 'freeze');
+            flash.appendChild(fade);
+            document.getElementById('main-svg').appendChild(flash);
+            setTimeout(() => flash.remove(), 300);
+        }
+
+        function updateSpeed(val) {
+            speed = parseFloat(val);
+            document.getElementById('speed-val').textContent = val + 'x';
+            
+            // Update all durations
+            const animations = document.querySelectorAll('animate, animateTransform');
+            animations.forEach(anim => {
+                const current = parseFloat(anim.getAttribute('dur'));
+                if (current && current > 0) {
+                    anim.setAttribute('dur', current / speed + 's');
+                }
+            });
+        }
+
+        function updateOpacity(val) {
+            opacity = val;
+            document.getElementById('pulse-val').textContent = Math.floor(val * 100) + '%';
+            hoverLayer = document.getElementById('radar-layer');
+            const beams = hoverLayer.querySelectorAll('.radar-blip');
+            beams.forEach(b => b.setAttribute('opacity', opacity));
+        }
+
+        function toggleGrid() {
+            const bg = document.getElementById('grid-background');
+            bg.style.display = document.getElementById('grid-toggle').checked ? 'block' : 'none';
+        }
+
+        function toggleTicks() {
+            const scanBeams = document.getElementById('scan-beam');
+            scanBeams.style.display = document.getElementById('ticks-toggle').checked ? 'block' : 'none';
+        }
+
+        // Initial randomization
+        window.addEventListener('load', () => {
+            setInterval(() => {
+                if (Math.random() > 0.95) {
+                    const glitch = document.getElementById('corners');
+                    const offset = (Math.random() - 0.5) * 20;
+                    glitch.setAttribute('transform', `translate(${offset}, 0)`);
+                    setTimeout(() => glitch.setAttribute('transform', `translate(0, 0)`), 100);
+                }
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
