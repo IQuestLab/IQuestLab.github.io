@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Canvas 粒子文字交互动画</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #111; /* 深色背景更能突显粒子 */
+        overflow: hidden; /* 防止滚动条 */
+        font-family: "Verdana", sans-serif;
+      }
+      canvas {
+        display: block;
+      }
+      #controls {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: white;
+        z-index: 10;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 简单的说明 -->
+    <div id="controls">移动鼠标靠近文字查看效果</div>
+    <canvas id="canvas1"></canvas>
+
+    <script>
+      /**
+       * 核心逻辑说明：
+       * 1. init(): 设置 Canvas 环境。
+       * 2. getTextCoordinates(): 将文字绘制在 Canvas 上，读取像素数据 (getImageData)，
+       *    找出有颜色的像素点坐标，作为粒子的“目标位置(originX, originY)”。
+       * 3. Particle 类：每个粒子拥有当前坐标(x,y)和目标坐标(originX, originY)。
+       * 4. update(): 每一帧计算鼠标与粒子的距离。
+       *    - 如果距离小于阈值 -> 施加斥力（修改 x, y）。
+       *    - 如果距离大于阈值 -> 施加弹力（Easing 缓动公式）让粒子回原创目标位置。
+       * 5. draw(): 在当前的 x, y 位置绘制粒子。
+       */
+
+      const canvas = document.getElementById("canvas1");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      let particleArray = [];
+
+      // 配置参数
+      const config = {
+        text: "IQuest",
+        fontSize: 120,
+        particleGap: 3, // 粒子采样间隔，越小粒子越多（性能消耗越大）
+        mouseRadius: 100, // 鼠标斥力影响范围
+        particleSize: 2,
+        returnSpeed: 0.1, // 回弹缓动系数 (0-1)，越小越慢
+        color: "white",
+      };
+
+      // 鼠标交互对象
+      let mouse = {
+        x: null,
+        y: null,
+        radius: config.mouseRadius,
+      };
+
+      // 监听鼠标移动
+      window.addEventListener("mousemove", function (event) {
+        mouse.x = event.x;
+        mouse.y = event.y;
+      });
+
+      // 移动端触摸/指针兼容：让手机端也能“靠近文字查看效果”
+      const setPointer = (clientX, clientY) => {
+        mouse.x = clientX;
+        mouse.y = clientY;
+      };
+
+      window.addEventListener(
+        "touchstart",
+        function (e) {
+          if (!e.touches || !e.touches.length) return;
+          setPointer(e.touches[0].clientX, e.touches[0].clientY);
+        },
+        { passive: true }
+      );
+
+      window.addEventListener(
+        "touchmove",
+        function (e) {
+          if (!e.touches || !e.touches.length) return;
+          // demo 是全屏 canvas，避免在 iframe 内滑动时页面跟着滚
+          e.preventDefault();
+          setPointer(e.touches[0].clientX, e.touches[0].clientY);
+        },
+        { passive: false }
+      );
+
+      window.addEventListener(
+        "touchend",
+        function () {
+          mouse.x = null;
+          mouse.y = null;
+        },
+        { passive: true }
+      );
+
+      // Pointer Events：覆盖支持 pointer 的设备（含部分安卓浏览器）
+      window.addEventListener(
+        "pointermove",
+        function (e) {
+          setPointer(e.clientX, e.clientY);
+        },
+        { passive: true }
+      );
+
+      // 绘制文字并获取坐标数据
+      function init() {
+        particleArray = [];
+        ctx.fillStyle = "white";
+
+        // 小屏适配：动态缩放字体，避免右侧字符（例如 t）被裁切
+        const baseFontSize = config.fontSize;
+        ctx.font = "bold " + baseFontSize + "px Verdana";
+        const baseTextWidth = ctx.measureText(config.text).width || 1;
+        const padding = Math.max(16, Math.floor(canvas.width * 0.08));
+        const scale = Math.min(1, (canvas.width - padding * 2) / baseTextWidth);
+        const fontSize = Math.max(24, Math.floor(baseFontSize * scale));
+
+        ctx.font = "bold " + fontSize + "px Verdana";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // 1. 临时绘制文字（居中）
+        ctx.fillText(config.text, canvas.width / 2, canvas.height / 2);
+
+        // 2. 获取像素数据 (扫描整个画布区域，实际优化可以只扫描文字区域)
+        // getImageData 返回一个 Uint8ClampedArray，包含 R,G,B,A 信息
+        const textCoordinates = ctx.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
+        // 3. 扫描像素，生成粒子
+        // step = 4 * gap (因为每个像素由4个值组成: r,g,b,a)
+        // y 和 x 的循环步长由 particleGap 决定
+        for (let y = 0; y < textCoordinates.height; y += config.particleGap) {
+          for (let x = 0; x < textCoordinates.width; x += config.particleGap) {
+            // 计算透明度(alpha)在数组中的索引位置
+            // alpha 是第4个值，所以索引是 (y * width + x) * 4 + 3
+            const index = (y * textCoordinates.width + x) * 4 + 3;
+
+            // 如果 Alpha > 128 (约50%透明度)，说明这里是文字的一部分
+            if (textCoordinates.data[index] > 128) {
+              let positionX = x;
+              let positionY = y;
+              particleArray.push(new Particle(positionX, positionY));
+            }
+          }
+        }
+
+        // 清除原始文字，只保留粒子
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      class Particle {
+        constructor(x, y) {
+          this.x = Math.random() * canvas.width; // 初始随机位置（入场动画效果）
+          this.y = Math.random() * canvas.height;
+          this.originX = x; // 目标位置（文字原本的位置）
+          this.originY = y;
+          this.size = config.particleSize;
+
+          // 颜色：基于位置生成渐变色
+          // 使用 HSL 颜色，色相由 x 坐标决定
+          this.color = "hsl(" + (x / canvas.width) * 360 + ", 100%, 50%)";
+
+          // 物理属性
+          this.vx = 0;
+          this.vy = 0;
+          this.ease = config.returnSpeed;
+          this.friction = 0.9; // 摩擦力，防止粒子停下时抖动
+          this.density = Math.random() * 30 + 1; // 随机密度，让粒子运动速度不同
+        }
+
+        draw() {
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        update() {
+          // --- 1. 计算鼠标斥力 ---
+          let dx = mouse.x - this.x;
+          let dy = mouse.y - this.y;
+          // 勾股定理计算距离
+          let distance = Math.sqrt(dx * dx + dy * dy);
+
+          // 计算斥力方向和力度
+          // 力度与距离成反比：越近推力越大
+          let forceDirectionX = dx / distance;
+          let forceDirectionY = dy / distance;
+          let maxDistance = mouse.radius;
+          // 将力归一化到 0-1 之间
+          let force = (maxDistance - distance) / maxDistance;
+
+          // 斥力方向速度
+          let directionX = forceDirectionX * force * this.density;
+          let directionY = forceDirectionY * force * this.density;
+
+          if (distance < mouse.radius) {
+            // 如果鼠标靠近，向反方向移动
+            this.x -= directionX;
+            this.y -= directionY;
+          } else {
+            // --- 2. 计算弹力回归 (Easing) ---
+            // 如果鼠标离开，粒子需要回到 originX, originY
+            if (this.x !== this.originX) {
+              let dxMove = this.originX - this.x;
+              this.x += dxMove * this.ease; // 缓动公式：每次移动剩余距离的一小部分
+            }
+            if (this.y !== this.originY) {
+              let dyMove = this.originY - this.y;
+              this.y += dyMove * this.ease;
+            }
+          }
+        }
+      }
+
+      // 动画循环
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 连线逻辑（可选，为了更好看，这里只做点）
+        // 如果想做连线效果，可以在这里加双重循环，但性能会下降
+
+        for (let i = 0; i < particleArray.length; i++) {
+          particleArray[i].draw();
+          particleArray[i].update();
+        }
+        requestAnimationFrame(animate);
+      }
+
+      // 初始化
+      init();
+      animate();
+
+      // 窗口大小改变时重置
+      window.addEventListener("resize", function () {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        init();
+      });
+    </script>
+  </body>
+</html>

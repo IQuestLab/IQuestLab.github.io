@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>四缸引擎大爆炸 · INLINE-4 ISSUE #04</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B0B11;
+  --ink2:#15151F;
+  --ink3:#1E1E2B;
+  --paper:#F2ECE0;
+  --mag:#FF2E88;
+  --cyan:#00E5FF;
+  --yellow:#FFD400;
+  --blue:#2B5CE6;
+  --red:#FF3B30;
+  --grn:#39FF88;
+  --disp:'Bangers','Impact','Haettenschweiler','Arial Narrow Bold',sans-serif;
+  --mono:'IBM Plex Mono','SFMono-Regular',ui-monospace,'PingFang SC','Microsoft YaHei',monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(circle at 12% 6%, rgba(255,46,136,.20), transparent 42%),
+    radial-gradient(circle at 88% 92%, rgba(0,229,255,.16), transparent 45%),
+    radial-gradient(circle at 70% 12%, rgba(255,212,0,.08), transparent 35%),
+    var(--ink);
+  color:var(--paper);
+  font-family:var(--mono);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(rgba(255,46,136,.30) 1px, transparent 1.4px);
+  background-size:7px 7px;
+  opacity:.35;
+  mix-blend-mode:screen;
+}
+body::after{
+  content:"";position:fixed;inset:-50%;pointer-events:none;z-index:0;opacity:.05;
+  background-image:repeating-linear-gradient(115deg,#fff 0 2px,transparent 2px 9px);
+}
+.wrap{position:relative;z-index:1;max-width:1420px;margin:0 auto;padding:26px 20px 60px}
+
+/* ---------- MASTHEAD ---------- */
+.masthead{position:relative;margin-bottom:30px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px 26px}
+.issue{
+  font-family:var(--disp);font-size:15px;letter-spacing:2px;
+  background:var(--yellow);color:#000;padding:5px 12px 3px;
+  transform:rotate(-4deg);border:3px solid #000;box-shadow:5px 5px 0 #000;
+  white-space:nowrap;
+}
+.titleblock{position:relative;flex:1 1 420px;min-width:280px}
+h1{
+  font-family:var(--disp);
+  font-size:clamp(46px,8.4vw,104px);
+  line-height:.82;margin:0;letter-spacing:1px;
+  color:var(--paper);
+  text-shadow:-4px 0 0 var(--cyan), 4px 0 0 var(--mag), 7px 7px 0 #000;
+  transform:skewX(-5deg);
+}
+h1 em{display:block;font-style:normal;color:var(--yellow);text-shadow:-4px 0 0 var(--mag),4px 0 0 var(--cyan),7px 7px 0 #000}
+.tagline{
+  margin-top:14px;font-size:12px;letter-spacing:2.4px;text-transform:uppercase;
+  color:var(--cyan);border-left:5px solid var(--mag);padding-left:10px;
+}
+.masthead .sticker{
+  font-family:var(--disp);font-size:13px;letter-spacing:1.5px;text-align:center;
+  background:var(--mag);color:#000;border:3px solid #000;box-shadow:5px 5px 0 #000;
+  padding:8px 14px 6px;transform:rotate(6deg);line-height:1.15;
+}
+.masthead .sticker b{display:block;font-size:22px;color:#fff}
+
+/* ---------- PANELS ---------- */
+.stage{display:grid;grid-template-columns:minmax(0,1.72fr) minmax(300px,.82fr);grid-template-rows:auto auto;gap:26px;align-items:start}
+.side{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;gap:26px;min-width:0}
+.panel{
+  position:relative;background:var(--ink2);
+  border:4px solid #000;
+  box-shadow:9px 9px 0 #000;
+}
+.panel.engine{grid-column:1;grid-row:1;transform:rotate(-.35deg)}
+.panel.cycle{grid-column:1;grid-row:2;transform:rotate(.3deg)}
+.phead{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--mag);border-bottom:4px solid #000;padding:7px 14px 5px;
+}
+.phead h2{font-family:var(--disp);font-size:22px;letter-spacing:1.6px;margin:0;color:#000;transform:skewX(-8deg)}
+.phead .sub{font-size:10px;letter-spacing:2px;color:#2a0013;font-weight:700;text-align:right}
+.phead.cy{background:var(--cyan)}
+.phead.cy .sub{color:#00202a}
+.phead.gy{background:var(--yellow)}
+.phead.gy .sub{color:#2a2200}
+
+.pbody{padding:16px}
+
+/* ---------- ENGINE CANVAS ---------- */
+.canvas-hold{position:relative;background:#0E0E16;border-bottom:4px solid #000}
+#engine{display:block;width:100%;height:clamp(320px,44vw,470px)}
+.bursts{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.burst{
+  position:absolute;transform:translate(-50%,-50%) rotate(-12deg);
+  font-family:var(--disp);font-size:clamp(30px,5vw,58px);letter-spacing:2px;
+  color:var(--bc,var(--yellow));
+  -webkit-text-stroke:4px #000;paint-order:stroke fill;
+  text-shadow:6px 6px 0 rgba(0,0,0,.55);
+  animation:pop .9s cubic-bezier(.2,1.5,.4,1) forwards;
+  white-space:nowrap;
+}
+@keyframes pop{
+  0%{opacity:0;transform:translate(-50%,-50%) rotate(-24deg) scale(.2)}
+  22%{opacity:1;transform:translate(-50%,-50%) rotate(-8deg) scale(1.12)}
+  38%{transform:translate(-50%,-50%) rotate(-12deg) scale(1)}
+  75%{opacity:1}
+  100%{opacity:0;transform:translate(-50%,-58%) rotate(-12deg) scale(1.05)}
+}
+.caption{
+  position:absolute;left:14px;bottom:12px;max-width:62%;
+  background:var(--paper);color:#000;border:3px solid #000;box-shadow:5px 5px 0 var(--mag);
+  padding:7px 11px;font-size:12px;font-weight:600;letter-spacing:.5px;line-height:1.35;
+  transform:rotate(-1.2deg);
+}
+.caption b{font-family:var(--disp);font-size:17px;letter-spacing:1px;display:block;color:var(--mag)}
+
+/* firing order strip */
+.firing{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;background:var(--ink3)}
+.firing .lbl{font-family:var(--disp);font-size:16px;letter-spacing:1.6px;color:var(--yellow)}
+.cyl{
+  width:46px;height:46px;display:grid;place-items:center;position:relative;
+  border:3px solid #000;background:#0E0E16;color:#6b6b80;
+  font-family:var(--disp);font-size:24px;box-shadow:4px 4px 0 #000;
+  transition:background .06s linear,color .06s linear,transform .06s linear;
+}
+.cyl small{position:absolute;bottom:-16px;left:0;right:0;font-family:var(--mono);font-size:8px;letter-spacing:1px;color:#7a7a92}
+.cyl.on{background:var(--mag);color:#fff;transform:translateY(-3px) scale(1.06);box-shadow:4px 7px 0 #000}
+.cyl.on small{color:var(--mag)}
+
+/* ---------- CONTROLS ---------- */
+.ctl{margin-bottom:18px}
+.ctl:last-child{margin-bottom:0}
+.ctl .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.ctl label{font-family:var(--disp);font-size:16px;letter-spacing:1.4px;color:var(--paper)}
+.ctl .val{font-size:12px;font-weight:700;color:var(--yellow);letter-spacing:1px}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer;margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:12px;background:#0B0B11;border:3px solid #000;box-shadow:inset 0 0 0 2px #2a2a3a}
+input[type=range]::-moz-range-track{height:12px;background:#0B0B11;border:3px solid #000;box-shadow:inset 0 0 0 2px #2a2a3a}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:26px;margin-top:-10px;
+  background:var(--yellow);border:3px solid #000;box-shadow:3px 3px 0 rgba(0,0,0,.7);
+}
+input[type=range]::-moz-range-thumb{width:16px;height:22px;border-radius:0;background:var(--yellow);border:3px solid #000}
+input[type=range]:focus-visible{outline:3px solid var(--cyan);outline-offset:4px}
+input[type=range]#throttle::-webkit-slider-thumb{background:var(--mag)}
+input[type=range]#throttle::-moz-range-thumb{background:var(--mag)}
+
+.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+button{
+  font-family:var(--disp);font-size:17px;letter-spacing:1.4px;
+  background:var(--ink3);color:var(--paper);border:3px solid #000;
+  box-shadow:5px 5px 0 #000;padding:11px 8px 8px;cursor:pointer;
+  transition:transform .09s ease-out, box-shadow .09s ease-out, background .12s;
+}
+button:hover{background:#2a2a3c}
+button:active{transform:translate(5px,5px);box-shadow:0 0 0 #000}
+button:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
+button.ign{grid-column:1 / -1;background:var(--grn);color:#000;font-size:24px;padding:14px 8px 10px}
+button.ign:hover{background:#5cffa0}
+button.ign.off{background:var(--red);color:#fff}
+button.ign.off:hover{background:#ff6157}
+button[aria-pressed=true]{background:var(--cyan);color:#000}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.seg button{font-size:14px;padding:9px 4px 6px}
+
+/* ---------- GAUGES ---------- */
+.gauges{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+#tach{display:block;width:100%;height:170px}
+.readouts{display:flex;flex-direction:column;gap:9px;justify-content:center}
+.ro{background:#0B0B11;border:3px solid #000;box-shadow:inset 0 0 0 2px #26263a;padding:7px 10px}
+.ro .k{font-size:9px;letter-spacing:2px;color:#8a8aa5;text-transform:uppercase}
+.ro .v{font-family:var(--disp);font-size:27px;line-height:1;letter-spacing:1px;color:var(--cyan)}
+.ro .v u{text-decoration:none;font-family:var(--mono);font-size:11px;color:#8a8aa5;margin-left:4px}
+.ro.hot .v{color:var(--mag)}
+.ro.warn .v{color:var(--yellow)}
+
+/* ---------- CYCLE DIAGRAM ---------- */
+#cycle{display:block;width:100%;height:196px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;padding:10px 14px;border-top:3px solid #000;background:var(--ink3)}
+.legend span{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:1.4px}
+.legend i{width:14px;height:14px;border:2px solid #000;display:block}
+
+/* ---------- FOOTER ---------- */
+.footer{
+  margin-top:30px;border:4px solid #000;background:var(--ink2);box-shadow:9px 9px 0 #000;
+  padding:16px 18px;display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;justify-content:space-between;
+  transform:rotate(-.2deg);
+}
+.keys{display:flex;flex-wrap:wrap;gap:8px}
+kbd{
+  font-family:var(--mono);font-size:10px;font-weight:700;background:var(--paper);color:#000;
+  border:2px solid #000;box-shadow:3px 3px 0 var(--mag);padding:4px 7px;letter-spacing:1px;
+}
+.credit{font-size:10px;letter-spacing:2px;color:#7a7a92;text-transform:uppercase}
+.credit b{color:var(--yellow)}
+
+@media (max-width:980px){
+  .stage{grid-template-columns:minmax(0,1fr)}
+  .panel.engine,.panel.cycle,.side{grid-column:1;grid-row:auto;transform:none}
+  .side{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  #engine{height:clamp(280px,58vw,400px)}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="issue">ISSUE #04<br>25¢</div>
+    <div class="titleblock">
+      <h1>四缸引擎<em>大爆炸</em></h1>
+      <div class="tagline">INLINE-4 · 2.0L · 直列四缸 · 点火顺序 1—3—4—2 · 四冲程</div>
+    </div>
+    <div class="sticker">全负荷<b>720°</b>曲轴转角</div>
+  </header>
+
+  <div class="stage">
+
+    <!-- ENGINE -->
+    <section class="panel engine">
+      <div class="phead">
+        <h2>剖面视图 / CUTAWAY</h2>
+        <div class="sub" id="viewname">实时运动学 · 滑块-曲柄机构</div>
+      </div>
+      <div class="canvas-hold">
+        <canvas id="engine" role="img" aria-label="四缸发动机剖面动画"></canvas>
+        <div class="bursts" id="bursts" aria-hidden="true"></div>
+        <div class="caption" id="caption"><b>准备就绪</b>按「点火启动」或空格键起动发动机。</div>
+      </div>
+      <div class="firing" id="firing">
+        <span class="lbl">点火顺序</span>
+      </div>
+    </section>
+
+    <!-- SIDE -->
+    <div class="side">
+
+      <section class="panel">
+        <div class="phead gy">
+          <h2>控制台 / CONSOLE</h2>
+          <div class="sub">驾驶舱</div>
+        </div>
+        <div class="pbody">
+          <div class="btnrow">
+            <button class="ign off" id="btnIgn" aria-pressed="false">点火启动</button>
+            <button id="btnSound" aria-pressed="false">音效 OFF</button>
+            <button id="btnSlow" aria-pressed="false">慢动作</button>
+          </div>
+
+          <div class="ctl">
+            <div class="row"><label for="throttle">油门 THROTTLE</label><span class="val" id="vThr">18%</span></div>
+            <input type="range" id="throttle" min="0" max="100" value="18" aria-label="油门开度">
+          </div>
+          <div class="ctl">
+            <div class="row"><label for="load">负载 LOAD</label><span class="val" id="vLoad">25%</span></div>
+            <input type="range" id="load" min="0" max="100" value="25" aria-label="负载">
+          </div>
+          <div class="ctl">
+            <div class="row"><label for="idle">怠速 IDLE</label><span class="val" id="vIdle">850 rpm</span></div>
+            <input type="range" id="idle" min="600" max="1400" step="50" value="850" aria-label="目标怠速">
+          </div>
+
+          <div class="ctl">
+            <div class="row"><label>视图 VIEW</label></div>
+            <div class="seg">
+              <button id="v1" aria-pressed="true">剖面</button>
+              <button id="v2" aria-pressed="false">爆炸</button>
+              <button id="v3" aria-pressed="false">循环</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="phead">
+          <h2>仪表 / GAUGES</h2>
+          <div class="sub">转速表</div>
+        </div>
+        <div class="pbody">
+          <div class="gauges">
+            <canvas id="tach" role="img" aria-label="转速表"></canvas>
+            <div class="readouts">
+              <div class="ro"><div class="k">转速 RPM</div><div class="v" id="oRpm">0</div></div>
+              <div class="ro"><div class="k">扭矩 TORQUE</div><div class="v" id="oTq">0<u>N·m</u></div></div>
+              <div class="ro"><div class="k">功率 POWER</div><div class="v" id="oPw">0<u>kW</u></div></div>
+              <div class="ro warn"><div class="k">状态 STATE</div><div class="v" id="oSt" style="font-size:20px">停机</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- CYCLE -->
+    <section class="panel cycle">
+      <div class="phead cy">
+        <h2>四冲程循环 / 720° 展开图</h2>
+        <div class="sub">进气 → 压缩 → 做功 → 排气</div>
+      </div>
+      <canvas id="cycle" role="img" aria-label="四缸发动机四冲程循环展开图"></canvas>
+      <div class="legend">
+        <span><i style="background:#2B5CE6"></i>进气 INTAKE</span>
+        <span><i style="background:#FFD400"></i>压缩 COMPRESSION</span>
+        <span><i style="background:#FF2E88"></i>做功 POWER</span>
+        <span><i style="background:#00E5FF"></i>排气 EXHAUST</span>
+        <span style="color:#8a8aa5">竖线 = 当前曲轴转角</span>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="footer">
+    <div class="keys">
+      <kbd>空格 起动/停机</kbd><kbd>S 音效</kbd><kbd>E 爆炸图</kbd><kbd>1/2/3 视图</kbd><kbd>↑↓ 油门</kbd>
+    </div>
+    <div class="credit">物理模型：滑块-曲柄运动学 · 简化的指数压力曲线 · <b>Web Audio 合成声浪</b></div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   常量 / 几何  (绘图单位 ≈ 像素)
+   ============================================================ */
+const R = 36, L = 92, SP = 100;              // 曲柄半径 / 连杆长 / 主轴间距
+const CYLX = [-150,-50,50,150];              // 各缸中心 X
+const DECK = -150, HEADY = -218, CAMY = -186;
+const BORE_R = 31, PIST_W = 52, PIST_H = 44;
+const PHASE = [0, 540, 180, 360];            // 1-3-4-2 点火顺序的曲轴相位(度)
+const STROKE_NAME = ['进气','压缩','做功','排气'];
+const STROKE_EN   = ['INTAKE','COMPRESSION','POWER','EXHAUST'];
+
+const COL = {
+  ink:'#08080D', paper:'#F2ECE0', mag:'#FF2E88', cyan:'#00E5FF',
+  yellow:'#FFD400', blue:'#2B5CE6', red:'#FF3B30', grn:'#39FF88',
+  block:'#20202E', block2:'#171722', head:'#2A2A3C', steel:'#9AA3B8',
+  crank:'#00E5FF', rod:'#FFD400', pist:'#F2ECE0', intake:'#2B5CE6', exhaust:'#FF2E88'
+};
+
+/* ============================================================
+   状态
+   ============================================================ */
+const S = {
+  running:false, cranking:false, stalled:false,
+  rpm:0, theta:0,                 // theta: 弧度, 0 = 上止点
+  throttle:0.18, load:0.25, idle:850,
+  explode:0, explodeT:0, view:1, slow:false, sound:false,
+  fuelCut:false, cutTimer:0,
+  cyl:[{fire:0,pop:0},{fire:0,pop:0},{fire:0,pop:0},{fire:0,pop:0}],
+  tqInst:0, pw:0, tqAvg:0, lastFire:-1
+};
+
+/* 物理常数 (SI) */
+const A_PIST = Math.PI*Math.pow(0.043,2);     // 活塞面积 m^2
+const R_M = 0.043, L_M = 0.14;                // 曲柄半径 / 连杆长 m
+const INERTIA = 0.85;                         // 旋转惯量 kg·m^2
+const P_ATM = 1.013;                          // bar
+const V_CLEAR = A_PIST*0.0095;                // 燃烧室容积
+
+function pistonDisp(th){                      // 距上止点位移 (m)
+  return (R_M + L_M) - (R_M*Math.cos(th) + Math.sqrt(L_M*L_M - Math.pow(R_M*Math.sin(th),2)));
+}
+function cylVolume(th){ return V_CLEAR + A_PIST*pistonDisp(th); }
+function cylPressure(th, thr, cut){           // th: 该缸的循环角(度)
+  const c = ((th % 720)+720)%720;
+  const Vc = cylVolume(c*Math.PI/180);
+  let p;
+  if(c < 180){ p = 0.72; }                                        // 进气
+  else if(c < 360){ p = 0.72*Math.pow(cylVolume(180*Math.PI/180)/Vc, 1.32); } // 压缩
+  else if(c < 540){ p = cut ? 0.001 : (8 + 42*thr)*Math.pow(cylVolume(360*Math.PI/180)/Vc, 1.22); } // 做功
+  else { p = 1.18; }                                              // 排气
+  return Math.max(0.0008, p);
+}
+function cylTorque(th, thr, cut){
+  const c = ((th%720)+720)%720;
+  const t = c*Math.PI/180;
+  const p = cylPressure(t, thr, cut);
+  const beta = Math.asin(Math.min(0.99, R_M*Math.sin(t)/L_M));
+  return (p - P_ATM)*1e5*A_PIST * R_M * Math.sin(t+beta)/Math.cos(beta);
+}
+
+/* ============================================================
+   物理步进
+   ============================================================ */
+function physics(dt){
+  const SUB = 8, h = dt/SUB;
+  const omega = S.rpm*Math.PI/30;
+  let thr = S.throttle;
+
+  // 怠速控制
+  if(S.running){
+    const err = S.idle - S.rpm;
+    thr = Math.min(1, Math.max(thr, Math.max(0, err/500)*0.42));
+  }
+  // 断油限转
+  if(S.rpm > 6900) S.fuelCut = true;
+  if(S.fuelCut && S.rpm < 6300) S.fuelCut = false;
+  const cut = S.fuelCut || !S.running;
+
+  let tqSum = 0;
+  for(let k=0;k<SUB;k++){
+    let T = 0;
+    for(let i=0;i<4;i++){
+      const th = S.theta*180/Math.PI + PHASE[i];
+      const t = cylTorque(th, thr, cut);
+      T += t;
+      if(i===0) tqSum = t;
+    }
+    T -= 5 + 0.045*omega;                       // 摩擦
+    T -= S.load*150;                            // 负载
+    if(S.cranking) T += 95;                     // 起动机
+    let w = omega + T/INERTIA*h;
+    if(w < 0) w = 0;
+    S.rpm = w*30/Math.PI;
+    S.theta += w*h;
+  }
+  S.theta = ((S.theta % (Math.PI*4)) + Math.PI*4) % (Math.PI*4);
+  S.tqInst = tqSum;
+
+  // 点火 / 放炮事件
+  for(let i=0;i<4;i++){
+    const c = ((S.theta*180/Math.PI + PHASE[i])%720+720)%720;
+    const prev = S.cyl[i].fire;
+    if(prev < 360 && c >= 360){ S.cyl[i].fire = 360; onFire(i); }
+    else if(c < 360) S.cyl[i].fire = c;
+    if(S.cyl[i].pop > 0) S.cyl[i].pop = Math.max(0, S.cyl[i].pop - dt*4);
+  }
+
+  // 状态机
+  if(S.cranking && S.rpm > 520){ S.cranking = false; S.running = true; S.stalled = false; burst('轰!','#39FF88'); }
+  if(S.running && S.rpm < 340 && !S.cranking){ S.running = false; S.stalled = true; burst('熄火!','#FF3B30'); }
+  if(S.running && S.fuelCut && Math.random()<0.25) burst('咔哒!','#FFD400');
+
+  const w = S.rpm*Math.PI/30;
+  S.pw = Math.max(0, S.tqAvg*w/1000);
+}
+function onFire(i){
+  const c = ((S.theta*180/Math.PI + PHASE[i])%720+720)%720;
+  const overrun = S.throttle < 0.06 && S.rpm > 1800;
+  if(overrun){ S.cyl[i].pop = 1; pop(0.7); if(Math.random()<0.35) burst(Math.random()<0.5?'砰!':'啪!','#FF3B30'); }
+  else if(S.rpm > 5200 && Math.random()<0.10) burst('轰!!','#FF2E88');
+  flashCyl(i);
+}
+
+/* ============================================================
+   音频
+   ============================================================ */
+let AC=null, AU=null;
+function initAudio(){
+  try{
+    AC = new (window.AudioContext||window.webkitAudioContext)();
+    const master = AC.createGain(); master.gain.value = 0; master.connect(AC.destination);
+    const lp = AC.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=700; lp.Q.value=1.4; lp.connect(master);
+    const mk=(type,fr,g)=>{const o=AC.createOscillator();o.type=type;o.frequency.value=fr;const gn=AC.createGain();gn.gain.value=g;o.connect(gn);gn.connect(lp);o.start();return{o,g:gn};};
+    const a=mk('sawtooth',30,.34), b=mk('square',15,.20), c=mk('sawtooth',60,.11);
+    const buf = AC.createBuffer(1, AC.sampleRate*2, AC.sampleRate);
+    const d = buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const ns = AC.createBufferSource(); ns.buffer=buf; ns.loop=true;
+    const bp = AC.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=500; bp.Q.value=.7;
+    const gn = AC.createGain(); gn.gain.value=0;
+    ns.connect(bp); bp.connect(gn); gn.connect(master); ns.start();
+    AU = {master,lp,a,b,c,bp,gn,buf};
+  }catch(e){ AU=null; }
+}
+function updateAudio(){
+  if(!AU) return;
+  const t = AC.currentTime;
+  const f0 = Math.max(5, S.rpm/60*2);
+  AU.a.o.frequency.setTargetAtTime(f0, t, .02);
+  AU.b.o.frequency.setTargetAtTime(f0*0.5, t, .02);
+  AU.c.o.frequency.setTargetAtTime(f0*2.02, t, .02);
+  const on = S.sound && (S.running||S.cranking);
+  const vol = on ? (0.09 + 0.20*S.throttle + Math.min(.10, S.rpm/65000)) : 0;
+  AU.master.gain.setTargetAtTime(vol, t, .06);
+  AU.lp.frequency.setTargetAtTime(260 + S.throttle*2400 + S.rpm*0.28, t, .06);
+  AU.bp.frequency.setTargetAtTime(280 + f0*7, t, .06);
+  AU.gn.gain.setTargetAtTime(on ? (0.015 + S.throttle*0.09) : 0, t, .06);
+}
+function pop(inten){
+  if(!AU || !S.sound) return;
+  const t = AC.currentTime;
+  const s = AC.createBufferSource(); s.buffer = AU.buf;
+  const f = AC.createBiquadFilter(); f.type='bandpass'; f.frequency.value=160+Math.random()*420; f.Q.value=1.6;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(0.30*inten, t+0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+0.13);
+  s.connect(f); f.connect(g); g.connect(AU.master);
+  s.start(t); s.stop(t+0.16);
+}
+
+/* ============================================================
+   画布工具
+   ============================================================ */
+let TINT = null;
+const col = x => TINT || x;
+
+function fit(cv){
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  const r = cv.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+  if(cv.width !== w*dpr || cv.height !== h*dpr){ cv.width = w*dpr; cv.height = h*dpr; }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w,h};
+}
+function rr(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+function ink(ctx, fn, fill, lw){
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.strokeStyle = col('#000'); ctx.lineWidth = lw||4;
+  fn(); ctx.fillStyle = col(fill); ctx.fill(); ctx.stroke();
+}
+let halftone = null;
+function makeHalftone(){
+  const c = document.createElement('canvas'); c.width=c.height=8;
+  const x = c.getContext('2d');
+  x.fillStyle='rgba(255,46,136,.30)';
+  x.beginPath(); x.arc(2,2,1.35,0,7); x.fill();
+  x.beginPath(); x.arc(6,6,1.35,0,7); x.fill();
+  halftone = x.canvas;
+}
+
+/* ============================================================
+   发动机绘制
+   ============================================================ */
+function valveLift(cycleDeg, which){
+  // which: 0 进气, 1 排气
+  const peak = which===0 ? 90 : 630, half = which===0 ? 105 : 105;
+  let d = cycleDeg - peak;
+  while(d > 360) d -= 720; while(d < -360) d += 720;
+  if(Math.abs(d) > half) return 0;
+  return 0.5*(1+Math.cos(Math.PI*d/half));
+}
+
+function paintEngine(ctx, w, h){
+  const e = S.explode;
+  const sc = Math.min(w/700, h/410);
+  ctx.save();
+  ctx.translate(w/2, h/2 + 26);
+  ctx.scale(sc, sc);
+
+  const th = S.theta;
+  const pos = i => {
+    const a = th + PHASE[i]*Math.PI/180;
+    return { a, jx: CYLX[i] + R*Math.cos(a), jy: R*Math.sin(a),
+             py: -(R*Math.cos(a) + Math.sqrt(Math.max(1,L*L - Math.pow(R*Math.sin(a),2)))) };
+  };
+
+  /* ---- 正时皮带 / 皮带轮 ---- */
+  ctx.save();
+  ctx.translate(-252, 0);
+  ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(0,0,38,0,7); }, COL.block2, 4);
+  ctx.save(); ctx.rotate(th);
+  ink(ctx, ()=>{ ctx.beginPath(); ctx.moveTo(-38,0); ctx.lineTo(38,0); ctx.moveTo(0,-38); ctx.lineTo(0,38); }, COL.cyan, 4);
+  ctx.restore();
+  ctx.restore();
+  // 凸轮轴皮带轮
+  ctx.save(); ctx.translate(-252, CAMY);
+  ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(0,0,19,0,7); }, COL.block2, 4);
+  ctx.save(); ctx.rotate(th/2);
+  ink(ctx, ()=>{ ctx.beginPath(); ctx.moveTo(-19,0); ctx.lineTo(19,0); ctx.moveTo(0,-19); ctx.lineTo(0,19); }, COL.yellow, 3);
+  ctx.restore(); ctx.restore();
+  // 皮带
+  ctx.strokeStyle = col('#000'); ctx.lineWidth = 11;
+  ctx.beginPath(); ctx.moveTo(-252,-38); ctx.lineTo(-252,CAMY-19); ctx.stroke();
+  ctx.strokeStyle = col(COL.steel); ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(-252,-38); ctx.lineTo(-252,CAMY-19); ctx.stroke();
+
+  /* ---- 飞轮 ---- */
+  ctx.save();
+  ctx.translate(252 + 150*e, 0);
+  ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(0,0,80,0,7); }, COL.block2, 5);
+  ctx.save(); ctx.rotate(th);
+  for(let k=0;k<6;k++){
+    ctx.save(); ctx.rotate(k*Math.PI/3);
+    ink(ctx, ()=>{ ctx.beginPath(); ctx.moveTo(0,-16); ctx.lineTo(0,-72); ctx.lineWidth=16; }, COL.steel, 4);
+    ctx.restore();
+  }
+  ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(0,0,22,0,7); }, COL.cyan, 4);
+  ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(0,-58,8,0,7); }, COL.mag, 3);
+  ctx.restore();
+  ctx.restore();
+
+  /* ---- 缸体 ---- */
+  ctx.save();
+  ctx.translate(0, 0);
+  ink(ctx, ()=>{ rr(ctx, -196, DECK, 392, 168, 10); }, COL.block, 5);
+  // 缸筒
+  for(let i=0;i<4;i++){
+    ink(ctx, ()=>{ rr(ctx, CYLX[i]-BORE_R, DECK-4, BORE_R*2, 150, 6); }, '#0D0D15', 4);
+  }
+  // 缸体散热片
+  ctx.strokeStyle = col('rgba(255,255,255,.10)'); ctx.lineWidth = 3;
+  for(let y=DECK+16; y<DECK+150; y+=15){
+    ctx.beginPath(); ctx.moveTo(-190,y); ctx.lineTo(190,y); ctx.stroke();
+  }
+  // 油底壳
+  ink(ctx, ()=>{ ctx.beginPath(); ctx.moveTo(-150,18); ctx.lineTo(150,18); ctx.lineTo(120,86); ctx.lineTo(-120,86); ctx.closePath(); }, COL.block2, 5);
+  ctx.restore();
+
+  /* ---- 曲轴 ---- */
+  ctx.save();
+  ctx.translate(0, 45*e);
+  for(let i=0;i<4;i++){
+    const p = pos(i);
+    // 曲柄臂
+    ink(ctx, ()=>{
+      ctx.beginPath();
+      ctx.moveTo(CYLX[i]-13, -6); ctx.lineTo(CYLX[i]+13, -6);
+      ctx.lineTo(p.jx+11, p.jy); ctx.lineTo(p.jx-11, p.jy); ctx.closePath();
+    }, COL.crank, 4);
+    // 主轴颈
+    ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(CYLX[i], 0, 15, 0, 7); }, COL.crank, 4);
+    // 连杆轴颈
+    ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(p.jx, p.jy, 12, 0, 7); }, '#7FF2FF', 4);
+  }
+  ctx.restore();
+
+  /* ---- 连杆 ---- */
+  ctx.save();
+  ctx.translate(0, 15*e);
+  for(let i=0;i<4;i++){
+    const p = pos(i);
+    const dx = CYLX[i]-p.jx, dy = p.py-p.jy, len = Math.hypot(dx,dy);
+    const ang = Math.atan2(dy,dx);
+    ctx.save(); ctx.translate(p.jx, p.jy); ctx.rotate(ang);
+    ink(ctx, ()=>{ rr(ctx, -6, -7, len+12, 14, 6); }, COL.rod, 4);
+    ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(len+6, 0, 12, 0, 7); }, COL.rod, 4);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  /* ---- 活塞 ---- */
+  ctx.save();
+  ctx.translate(0, -45*e);
+  for(let i=0;i<4;i++){
+    const p = pos(i);
+    const y = p.py;
+    ink(ctx, ()=>{ rr(ctx, CYLX[i]-PIST_W/2, y-PIST_H/2, PIST_W, PIST_H, 7); }, COL.pist, 4);
+    ctx.strokeStyle = col('#000'); ctx.lineWidth = 3;
+    for(let k=1;k<=2;k++){
+      ctx.beginPath(); ctx.moveTo(CYLX[i]-PIST_W/2+3, y-PIST_H/2+k*9); ctx.lineTo(CYLX[i]+PIST_W/2-3, y-PIST_H/2+k*9); ctx.stroke();
+    }
+    ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(CYLX[i], y, 7, 0, 7); }, COL.cyan, 3);
+  }
+  ctx.restore();
+
+  /* ---- 气缸盖 + 气门 + 凸轮轴 ---- */
+  ctx.save();
+  ctx.translate(0, -92*e);
+  ink(ctx, ()=>{ rr(ctx, -200, HEADY-30, 400, 52, 8); }, COL.head, 5);
+  for(let i=0;i<4;i++){
+    const cyc = ((th*180/Math.PI + PHASE[i])%720+720)%720;
+    const li = valveLift(cyc,0), le = valveLift(cyc,1);
+    const ix = CYLX[i]-19, ex = CYLX[i]+19;
+    // 进气门
+    ink(ctx, ()=>{ ctx.beginPath(); ctx.moveTo(ix-6,HEADY-30); ctx.lineTo(ix+6,HEADY-30); ctx.lineTo(ix+4,HEADY+li*24); ctx.lineTo(ix-4,HEADY+li*24); ctx.closePath(); }, COL.intake, 3);
+    ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(ix, HEADY+li*24, 9, 0, 7); }, COL.intake, 3);
+    // 排气门
+    ink(ctx, ()=>{ ctx.beginPath(); ctx.moveTo(ex-6,HEADY-30); ctx.lineTo(ex+6,HEADY-30); ctx.lineTo(ex+4,HEADY+le*24); ctx.lineTo(ex-4,HEADY+le*24); ctx.closePath(); }, COL.exhaust, 3);
+    ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(ex, HEADY+le*24, 9, 0, 7); }, COL.exhaust, 3);
+    // 凸轮
+    ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(ix, CAMY+li*20, 12, 0, 7); }, COL.intake, 3);
+    ink(ctx, ()=>{ ctx.beginPath(); ctx.arc(ex, CAMY+le*20, 12, 0, 7); }, COL.exhaust, 3);
+    // 火花塞
+    const spark = (cyc > 344 && cyc < 378);
+    ink(ctx, ()=>{ rr(ctx, CYLX[i]-8, HEADY-52, 16, 26, 4); }, COL.steel, 3);
+    if(spark){
+      ctx.save();
+      ctx.strokeStyle = col(COL.yellow); ctx.lineWidth = 3; ctx.shadowColor = col(COL.yellow); ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.moveTo(CYLX[i]-6, HEADY-52); ctx.lineTo(CYLX[i]+2, HEADY-64); ctx.lineTo(CYLX[i]-3, HEADY-62); ctx.lineTo(CYLX[i]+6, HEADY-76);
+      ctx.stroke(); ctx.restore();
+      const g = ctx.createRadialGradient(CYLX[i],HEADY-70,2,CYLX[i],HEADY-70,44);
+      g.addColorStop(0,'rgba(255,212,0,.85)'); g.addColorStop(1,'rgba(255,212,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(CYLX[i],HEADY-70,44,0,7); ctx.fill();
+    }
+    // 排气火焰
+    if(S.cyl[i].pop > 0){
+      const s = S.cyl[i].pop;
+      ctx.save();
+      ctx.fillStyle = col(COL.red); ctx.globalAlpha = s;
+      ctx.beginPath();
+      ctx.moveTo(ex+8, HEADY-14);
+      ctx.lineTo(ex+8+30*s, HEADY-22-10*s);
+      ctx.lineTo(ex+8+16*s, HEADY-6);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+  // 凸轮轴
+  ink(ctx, ()=>{ rr(ctx, -196, CAMY-9, 392, 18, 8); }, COL.steel, 4);
+  ctx.restore();
+
+  /* ---- 爆炸图标签 ---- */
+  if(e > 0.3){
+    const a = Math.min(1,(e-0.3)/0.45);
+    ctx.save(); ctx.globalAlpha = a;
+    ctx.font = '22px Bangers, Impact, sans-serif';
+    ctx.textBaseline = 'middle';
+    const lab = (x,y,t,c)=>{
+      ctx.strokeStyle = col('#000'); ctx.lineWidth = 6; ctx.lineJoin='round';
+      ctx.strokeText(t,x,y); ctx.fillStyle = col(c); ctx.fillText(t,x,y);
+    };
+    const line = (x1,y1,x2,y2)=>{ ctx.strokeStyle=col('rgba(255,255,255,.5)'); ctx.lineWidth=2; ctx.setLineDash([5,4]);
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.setLineDash([]); };
+    line(-196, HEADY-92-92*e, -196, HEADY-46-92*e); lab(-196, HEADY-104-92*e, '气缸盖 + 凸轮轴组', COL.cyan);
+    line(150, DECK+70, 150, DECK+40); lab(150, DECK+92, '缸体 / 缸体水套', COL.paper);
+    line(150, -45*e-10, 150, -45*e+22); lab(150, -45*e-30, '活塞', COL.yellow);
+    line(150, 15*e+6, 150, 15*e+34); lab(150, 15*e+54, '连杆', COL.yellow);
+    line(-150, 45*e+4, -150, 45*e+32); lab(-150, 45*e+52, '曲轴', COL.cyan);
+    line(252+150*e, -20, 252+150*e+70, -20); lab(252+150*e+78, -20, '飞轮', COL.mag);
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+function drawEngine(){
+  const {ctx,w,h} = fit(engineCv);
+  ctx.clearRect(0,0,w,h);
+  // 背景
+  const g = ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'#12121C'); g.addColorStop(1,'#0A0A11');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  if(halftone){
+    const p = ctx.createPattern(halftone,'repeat');
+    ctx.globalAlpha = .5; ctx.fillStyle = p; ctx.fillRect(0,0,w,h); ctx.globalAlpha = 1;
+  }
+  // 速度线
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,229,255,.10)'; ctx.lineWidth = 2;
+  const sp = Math.min(1, S.rpm/7000);
+  for(let i=0;i<16;i++){
+    const a = i/16*Math.PI*2 + S.theta*0.3;
+    const r0 = 150 + (i%3)*40, r1 = r0 + 60 + sp*140;
+    ctx.beginPath();
+    ctx.moveTo(w/2+Math.cos(a)*r0, h/2+Math.sin(a)*r0*0.6);
+    ctx.lineTo(w/2+Math.cos(a)*r1, h/2+Math.sin(a)*r1*0.6);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 色差重影
+  TINT = 'rgba(0,229,255,.55)'; ctx.save(); ctx.translate(-4,-3); paintEngine(ctx,w,h); ctx.restore();
+  TINT = 'rgba(255,46,136,.55)'; ctx.save(); ctx.translate(4,3); paintEngine(ctx,w,h); ctx.restore();
+  TINT = null;
+  paintEngine(ctx,w,h);
+}
+
+/* ============================================================
+   转速表
+   ============================================================ */
+function drawTach(){
+  const {ctx,w,h} = fit(tachCv);
+  ctx.clearRect(0,0,w,h);
+  const cx = w/2, cy = h*0.86, rad = Math.min(w*0.44, h*0.78);
+  const a0 = Math.PI*0.86, a1 = Math.PI*2.14;
+  const MAXR = 8000;
+  const ang = v => a0 + (a1-a0)*Math.min(1,Math.max(0,v/MAXR));
+
+  // 表盘
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,rad+12,a0,a1); ctx.lineTo(cx,cy); ctx.closePath();
+  ctx.fillStyle = '#0B0B11'; ctx.fill();
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,rad+12,a0,a1); ctx.strokeStyle = COL.paper; ctx.lineWidth = 3; ctx.stroke();
+
+  // 红区
+  ctx.beginPath(); ctx.arc(cx,cy,rad-4, ang(6500), a1);
+  ctx.strokeStyle = COL.mag; ctx.lineWidth = 12; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,rad-4, ang(0), ang(6500));
+  ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 12; ctx.stroke();
+
+  // 刻度
+  ctx.font = '600 10px "IBM Plex Mono", monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(let v=0; v<=MAXR; v+=500){
+    const a = ang(v), big = v%1000===0;
+    const r1 = rad-14, r2 = rad-(big?26:20);
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a)*r1, cy+Math.sin(a)*r1);
+    ctx.lineTo(cx+Math.cos(a)*r2, cy+Math.sin(a)*r2);
+    ctx.strokeStyle = v>=6500 ? COL.mag : (big?COL.paper:'#6b6b80');
+    ctx.lineWidth = big?3:1.6; ctx.stroke();
+    if(big){
+      ctx.fillStyle = v>=6500 ? COL.mag : COL.paper;
+      ctx.fillText(String(v/1000), cx+Math.cos(a)*(rad-38), cy+Math.sin(a)*(rad-38));
+    }
+  }
+  // 指针
+  const a = ang(S.rpm);
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(a);
+  ctx.beginPath(); ctx.moveTo(-14,-5); ctx.lineTo(rad-18,-2.5); ctx.lineTo(rad-18,2.5); ctx.lineTo(-14,5); ctx.closePath();
+  ctx.fillStyle = COL.yellow; ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.fill(); ctx.stroke();
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(cx,cy,13,0,7); ctx.fillStyle=COL.mag; ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = '#8a8aa5'; ctx.font = '9px "IBM Plex Mono", monospace';
+  ctx.fillText('×1000 r/min', cx, cy-rad*0.42);
+  ctx.restore();
+}
+
+/* ============================================================
+   循环展开图
+   ============================================================ */
+function drawCycle(){
+  const {ctx,w,h} = fit(cycleCv);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = '#0B0B11'; ctx.fillRect(0,0,w,h);
+  const padL = 42, padR = 14, padT = 16, padB = 22;
+  const gw = w-padL-padR, gh = h-padT-padB;
+  const rowH = gh/4;
+  const xOf = deg => padL + gw*(deg/720);
+
+  ctx.font = '600 10px "IBM Plex Mono", monospace';
+  ctx.textBaseline = 'middle';
+  const cols = [COL.blue, COL.yellow, COL.mag, COL.cyan];
+  for(let i=0;i<4;i++){
+    const y = padT + i*rowH;
+    // 行标签
+    ctx.fillStyle = i%2 ? '#8a8aa5' : COL.paper;
+    ctx.textAlign = 'right';
+    ctx.font = '20px Bangers, Impact, sans-serif';
+    ctx.fillText(String(i+1), padL-10, y+rowH/2);
+    ctx.font = '9px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#6b6b80';
+    ctx.fillText('#'+PHASE[i]+'°', padL-10, y+rowH/2+13);
+
+    for(let s=0;s<4;s++){
+      const x1 = xOf(s*180), x2 = xOf((s+1)*180);
+      ctx.fillStyle = cols[s];
+      ctx.globalAlpha = .30;
+      ctx.fillRect(x1, y+2, x2-x1, rowH-4);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+      ctx.strokeRect(x1, y+2, x2-x1, rowH-4);
+    }
+    // 当前冲程高亮
+    const cyc = ((S.theta*180/Math.PI + PHASE[i])%720+720)%720;
+    const st = Math.floor(cyc/180);
+    ctx.fillStyle = cols[st]; ctx.globalAlpha = .85;
+    ctx.fillRect(xOf(st*180), y+2, xOf((st+1)*180)-xOf(st*180), rowH-4);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = COL.paper; ctx.lineWidth = 2;
+    ctx.strokeRect(xOf(st*180), y+2, xOf((st+1)*180)-xOf(st*180), rowH-4);
+    // 做功标记
+    ctx.fillStyle = '#000'; ctx.font = '9px "IBM Plex Mono", monospace'; ctx.textAlign='center';
+    ctx.fillText('▲TDC', xOf(360), y+rowH/2);
+  }
+  // 刻度
+  ctx.textAlign='center'; ctx.fillStyle='#6b6b80'; ctx.font='9px "IBM Plex Mono", monospace';
+  for(let d=0; d<=720; d+=90){
+    ctx.fillRect(xOf(d), h-padB+4, 1, 5);
+    if(d%180===0) ctx.fillText(d+'°', xOf(d), h-padB+14);
+  }
+  // 播放头
+  const th = ((S.theta*180/Math.PI)%720+720)%720;
+  const px = xOf(th);
+  ctx.save();
+  ctx.strokeStyle = COL.yellow; ctx.lineWidth = 3; ctx.shadowColor = COL.yellow; ctx.shadowBlur = 10;
+  ctx.beginPath(); ctx.moveTo(px, padT-6); ctx.lineTo(px, h-padB+2); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = COL.yellow;
+  ctx.beginPath(); ctx.moveTo(px-6,padT-8); ctx.lineTo(px+6,padT-8); ctx.lineTo(px,padT+2); ctx.closePath(); ctx.fill();
+}
+
+/* ============================================================
+   UI
+   ============================================================ */
+const engineCv = document.getElementById('engine');
+const tachCv   = document.getElementById('tach');
+const cycleCv  = document.getElementById('cycle');
+const burstsEl = document.getElementById('bursts');
+const captionEl= document.getElementById('caption');
+const firingEl = document.getElementById('firing');
+const cylEls = [];
+
+for(let i=0;i<4;i++){
+  const d = document.createElement('div');
+  d.className = 'cyl';
+  d.innerHTML = (i+1) + '<small>' + (i===0?'1':(i===1?'3':(i===2?'4':'2'))) + '</small>';
+  firingEl.appendChild(d);
+  cylEls.push(d);
+}
+function flashCyl(i){
+  cylEls.forEach(e=>e.classList.remove('on'));
+  cylEls[i].classList.add('on');
+  clearTimeout(flashCyl._t);
+  flashCyl._t = setTimeout(()=>cylEls.forEach(e=>e.classList.remove('on')), 90);
+}
+function burst(text, color){
+  if(burstsEl.childElementCount > 5) return;
+  const el = document.createElement('div');
+  el.className = 'burst';
+  el.textContent = text;
+  el.style.setProperty('--bc', color||COL.yellow);
+  el.style.left = (28 + Math.random()*44) + '%';
+  el.style.top  = (24 + Math.random()*32) + '%';
+  burstsEl.appendChild(el);
+  setTimeout(()=>el.remove(), 950);
+}
+
+const $ = id => document.getElementById(id);
+const btnIgn=$('btnIgn'), btnSound=$('btnSound'), btnSlow=$('btnSlow');
+const thr=$('throttle'), load=$('load'), idle=$('idle');
+
+function setIgn(on){
+  if(on){ S.cranking = true; S.running = false; S.stalled = false; burst('启动!','#39FF88'); }
+  else { S.running=false; S.cranking=false; S.rpm = Math.min(S.rpm, 200); }
+  syncIgn();
+}
+function syncIgn(){
+  const live = S.running || S.cranking;
+  btnIgn.textContent = live ? '停机 / SHUTDOWN' : '点火启动';
+  btnIgn.classList.toggle('off', !live);
+  btnIgn.setAttribute('aria-pressed', live ? 'true':'false');
+}
+btnIgn.addEventListener('click', ()=> setIgn(!(S.running||S.cranking)));
+btnSound.addEventListener('click', ()=>{
+  if(!AU && !initAudio()){ btnSound.textContent='音效 N/A'; btnSound.disabled=true; return; }
+  if(AC.state === 'suspended') AC.resume();
+  S.sound = !S.sound;
+  btnSound.textContent = '音效 ' + (S.sound?'ON':'OFF');
+  btnSound.setAttribute('aria-pressed', S.sound?'true':'false');
+});
+btnSlow.addEventListener('click', ()=>{
+  S.slow = !S.slow;
+  btnSlow.setAttribute('aria-pressed', S.slow?'true':'false');
+});
+function setView(v){
+  S.view = v;
+  S.explodeT = (v===2)?1:0;
+  [1,2,3].forEach(k=>$('v'+k).setAttribute('aria-pressed', k===v?'true':'false'));
+  $('viewname').textContent = v===1?'实时运动学 · 滑块-曲柄机构':(v===2?'爆炸视图 · 零件分解':'720° 循环相位展开');
+}
+$('v1').onclick=()=>setView(1); $('v2').onclick=()=>setView(2); $('v3').onclick=()=>setView(3);
+
+thr.addEventListener('input', ()=>{ S.throttle = +thr.value/100; $('vThr').textContent = thr.value+'%'; });
+load.addEventListener('input', ()=>{ S.load = +load.value/100; $('vLoad').textContent = load.value+'%'; });
+idle.addEventListener('input', ()=>{ S.idle = +idle.value; $('vIdle').textContent = idle.value+' rpm'; });
+
+window.addEventListener('keydown', e=>{
+  if(e.target.tagName === 'INPUT' && e.key !== ' ') return;
+  const k = e.key.toLowerCase();
+  if(e.code === 'Space'){ e.preventDefault(); setIgn(!(S.running||S.cranking)); }
+  else if(k === 's'){ btnSound.click(); }
+  else if(k === 'e'){ setView(S.view===2?1:2); }
+  else if(k === '1'){ setView(1); } else if(k === '2'){ setView(2); } else if(k === '3'){ setView(3); }
+  else if(e.key === 'ArrowUp'){ e.preventDefault(); thr.value = Math.min(100, +thr.value+5); thr.dispatchEvent(new Event('input')); }
+  else if(e.key === 'ArrowDown'){ e.preventDefault(); thr.value = Math.max(0, +thr.value-5); thr.dispatchEvent(new Event('input')); }
+});
+
+let capTimer = 0;
+function updateCaption(){
+  const cyc = ((S.theta*180/Math.PI + PHASE[0])%720+720)%720;
+  const st = Math.floor(cyc/180);
+  let title, body;
+  if(!S.running && !S.cranking){
+    title = S.stalled ? '发动机熄火!' : '准备就绪';
+    body  = S.stalled ? '转速低于 340 rpm，引擎停转。按「点火启动」重新起动。'
+                      : '按「点火启动」或空格键起动发动机。拖动油门可改变负载与转速。';
+  } else if(S.cranking){
+    title = '起动机拖动…'; body = '起动机以 95 N·m 拖动曲轴，直到转速超过 520 rpm 后点火。';
+  } else if(S.fuelCut){
+    title = '断油限转!'; body = '转速超过 6900 rpm，ECU 切断喷油，转速在限速器上弹跳。';
+  } else {
+    title = '第 1 缸 · ' + STROKE_NAME[st] + '冲程';
+    body  = STROKE_EN[st] + ' — 曲轴转角 ' + Math.round(cyc) + '° / 720°。点火顺序 1-3-4-2，各缸相差 180°。';
+  }
+  captionEl.innerHTML = '<b>'+title+'</b>'+body;
+}
+
+/* ============================================================
+   主循环
+   ============================================================ */
+let last = performance.now(), acc = 0, uiAcc = 0;
+function loop(now){
+  let dt = (now - last)/1000; last = now;
+  if(dt > 0.06) dt = 0.06;
+  const scale = S.slow ? 0.22 : 1;
+
+  S.explode += (S.explodeT - S.explode) * Math.min(1, dt*6);
+
+  physics(dt*scale);
+  updateAudio();
+
+  // 扭矩滑动平均
+  acc += dt;
+  if(acc > 0.1){ S.tqAvg = S.tqAvg*0.7 + S.tqInst*0.3; acc = 0; }
+
+  drawEngine();
+  drawTach();
+  drawCycle();
+
+  uiAcc += dt;
+  if(uiAcc > 0.08){
+    uiAcc = 0;
+    $('oRpm').textContent = Math.round(S.rpm);
+    $('oTq').innerHTML = Math.round(S.tqAvg) + '<u>N·m</u>';
+    $('oPw').innerHTML = S.pw.toFixed(1) + '<u>kW</u>';
+    const st = !S.running && !S.cranking ? (S.stalled?'熄火':'停机') : (S.fuelCut?'限速':(S.cranking?'起动':'运转'));
+    $('oSt').textContent = st;
+    $('oSt').parentElement.classList.toggle('hot', S.fuelCut || S.stalled);
+    $('oSt').parentElement.classList.toggle('warn', S.running && !S.fuelCut);
+    updateCaption();
+  }
+  requestAnimationFrame(loop);
+}
+
+/* 初始化 */
+makeHalftone();
+setView(1);
+syncIgn();
+$('vThr').textContent = thr.value+'%';
+$('vLoad').textContent = load.value+'%';
+$('vIdle').textContent = idle.value+' rpm';
+window.addEventListener('resize', ()=>{ drawEngine(); drawTach(); drawCycle(); });
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>

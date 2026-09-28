@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nymphéas · 孪星池塘 — Twin Primes Starry Pond</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --lav:#b9aede; --pink:#e7b6c8; --green:#a9c9b4; --blue:#a9c6dd;
+    --gold:#e6cf9a; --ink:#e9e6f2; --ink-dim:#b7b2cc;
+    --panel:rgba(28,26,44,.42); --panel-brd:rgba(185,174,222,.28);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#141824;
+    font-family:'Cormorant Garamond',serif;color:var(--ink);}
+  #scene{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab;}
+
+  /* ---- Monet mist backdrop behind the transparent canvas ---- */
+  .mist{position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 22% 18%, rgba(120,104,160,.42), transparent 55%),
+      radial-gradient(110% 80% at 82% 26%, rgba(150,110,132,.34), transparent 52%),
+      radial-gradient(130% 100% at 50% 108%, rgba(74,107,90,.40), transparent 60%),
+      radial-gradient(80% 70% at 68% 82%, rgba(169,198,221,.16), transparent 60%),
+      linear-gradient(160deg,#1a1f2e 0%,#171b28 45%,#12151f 100%);}
+  .mist::after{content:"";position:absolute;inset:0;
+    background:radial-gradient(closest-side at 50% 46%, transparent 55%, rgba(10,12,18,.55) 100%);}
+
+  /* ---- grain + vignette overlays ---- */
+  .grain{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .vignette{position:fixed;inset:0;z-index:4;pointer-events:none;
+    box-shadow:inset 0 0 240px 60px rgba(8,10,16,.72);}
+
+  /* ---- title ---- */
+  .title{position:fixed;top:26px;left:30px;z-index:10;pointer-events:none;}
+  .title h1{margin:0;font-weight:500;font-style:italic;font-size:34px;letter-spacing:.5px;
+    color:var(--ink);text-shadow:0 2px 24px rgba(120,104,160,.5);}
+  .title .sub{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;
+    text-transform:uppercase;color:var(--ink-dim);margin-top:6px;}
+
+  /* ---- stats (top right) ---- */
+  .stats{position:fixed;top:26px;right:30px;z-index:10;display:flex;gap:22px;
+    font-family:'Space Mono',monospace;text-align:right;}
+  .stat .num{font-size:22px;color:var(--lav);text-shadow:0 0 18px rgba(185,174,222,.5);}
+  .stat .lab{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-dim);margin-top:2px;}
+
+  /* ---- selection card (left) ---- */
+  .sel-info{position:fixed;left:30px;top:50%;transform:translateY(-50%);z-index:10;
+    width:210px;padding:18px 20px;border-radius:2px;
+    background:var(--panel);border:1px solid var(--panel-brd);
+    backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+    box-shadow:0 8px 40px rgba(10,12,20,.4);}
+  .sel-info .sel-hint{font-style:italic;font-size:17px;color:var(--ink-dim);line-height:1.4;}
+  .sel-title{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;
+    text-transform:uppercase;color:var(--pink);margin-bottom:10px;}
+  .sel-vals{font-size:26px;color:var(--ink);display:flex;align-items:baseline;gap:8px;}
+  .sel-vals b{font-weight:500;text-shadow:0 0 16px rgba(231,182,200,.5);}
+  .sel-vals .sep{color:var(--gold);font-size:20px;}
+  .sel-meta{font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-dim);margin-top:8px;}
+
+  /* ---- control dock (bottom) ---- */
+  .dock{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:10;
+    display:flex;align-items:stretch;gap:18px;padding:14px 20px;border-radius:2px;
+    background:var(--panel);border:1px solid var(--panel-brd);
+    backdrop-filter:blur(11px);-webkit-backdrop-filter:blur(11px);
+    box-shadow:0 10px 44px rgba(10,12,20,.5);max-width:94vw;flex-wrap:wrap;justify-content:center;}
+  .group{display:flex;flex-direction:column;gap:7px;justify-content:center;}
+  .group .glabel{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;
+    text-transform:uppercase;color:var(--ink-dim);}
+  .views{display:flex;gap:6px;}
+  .vp-btn,.chip,.act-btn{font-family:'Cormorant Garamond',serif;font-size:15px;
+    color:var(--ink-dim);background:rgba(255,255,255,.04);cursor:pointer;
+    border:1px solid rgba(185,174,222,.22);border-radius:2px;padding:6px 13px;
+    transition:all .22s ease;white-space:nowrap;}
+  .vp-btn:hover,.chip:hover,.act-btn:hover{color:var(--ink);border-color:var(--lav);
+    background:rgba(185,174,222,.12);}
+  .vp-btn.active{color:#171420;background:var(--lav);border-color:var(--lav);}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip.active{color:#171420;background:var(--pink);border-color:var(--pink);}
+
+  /* dual range slider */
+  .range-wrap{position:relative;width:240px;height:26px;display:flex;align-items:center;}
+  .range-wrap .track{position:absolute;left:0;right:0;height:3px;border-radius:3px;
+    background:rgba(185,174,222,.22);}
+  .range-wrap .fill{position:absolute;height:3px;border-radius:3px;
+    background:linear-gradient(90deg,var(--green),var(--lav),var(--pink));}
+  .range-wrap input[type=range]{position:absolute;left:0;width:100%;margin:0;background:none;
+    pointer-events:none;-webkit-appearance:none;appearance:none;height:26px;}
+  .range-wrap input[type=range]::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;
+    width:15px;height:15px;border-radius:50%;background:var(--ink);cursor:grab;
+    box-shadow:0 0 10px rgba(185,174,222,.7);border:2px solid var(--lav);}
+  .range-wrap input[type=range]::-moz-range-thumb{pointer-events:auto;width:14px;height:14px;
+    border-radius:50%;background:var(--ink);cursor:grab;border:2px solid var(--lav);}
+  .range-wrap input[type=range]::-webkit-slider-runnable-track{background:none;}
+  .range-wrap input[type=range]::-moz-range-track{background:none;}
+  .range-out{font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-dim);
+    display:flex;justify-content:space-between;margin-top:2px;}
+
+  .divider{width:1px;background:var(--panel-brd);}
+
+  /* ---- controls hint ---- */
+  .hint{position:fixed;left:30px;bottom:24px;z-index:9;font-family:'Space Mono',monospace;
+    font-size:10px;letter-spacing:1px;color:var(--ink-dim);line-height:1.9;opacity:.75;
+    pointer-events:none;}
+  .hint b{color:var(--lav);font-weight:700;}
+
+  /* ---- selection ring + label (3D projected) ---- */
+  #sel-ring{position:fixed;z-index:8;display:none;border:1.5px solid var(--pink);
+    border-radius:50%;pointer-events:none;box-shadow:0 0 18px rgba(231,182,200,.6);
+    animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:.85;}50%{transform:scale(1.18);opacity:1;}}
+  #sel-label{position:fixed;z-index:8;display:none;font-family:'Space Mono',monospace;
+    font-size:12px;color:var(--ink);background:rgba(20,18,32,.7);padding:3px 8px;border-radius:2px;
+    border:1px solid var(--panel-brd);pointer-events:none;white-space:nowrap;}
+
+  /* ---- loader ---- */
+  .loader{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:22px;
+    background:radial-gradient(circle at 50% 45%,#1c2230,#11141d);
+    transition:opacity .8s ease;}
+  .loader.hide{opacity:0;}
+  .loader h2{font-weight:500;font-style:italic;font-size:30px;margin:0;color:var(--ink);}
+  .loader .lsub{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;
+    text-transform:uppercase;color:var(--ink-dim);}
+  .lbar{width:240px;height:2px;background:rgba(185,174,222,.18);border-radius:2px;overflow:hidden;}
+  #load-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--lav),var(--pink));
+    transition:width .3s ease;}
+  .lily{font-size:44px;animation:bob 3s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-10px) rotate(3deg);}}
+
+  @media (max-width:720px){
+    .title h1{font-size:26px;} .sel-info{display:none;} .hint{display:none;}
+    .stats{gap:14px;} .range-wrap{width:180px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .lily,#sel-ring{animation:none;}
+  }
+</style>
+</head>
+<body>
+  <div class="mist"></div>
+  <canvas id="scene"></canvas>
+  <div class="vignette"></div>
+  <div class="grain"></div>
+
+  <div class="title">
+    <h1>Nymphéas · 孪星池塘</h1>
+    <div class="sub">Twin Primes on an Archimedean Spiral</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="num" id="stat-total">–</div><div class="lab">孪星对 · Pairs</div></div>
+    <div class="stat"><div class="num" id="stat-shown">–</div><div class="lab">当前可见 · Shown</div></div>
+  </div>
+
+  <div class="sel-info" id="sel-info">
+    <div class="sel-hint">点击任意星<br>查看孪生素数对</div>
+  </div>
+
+  <div id="sel-ring"></div>
+  <div id="sel-label"></div>
+
+  <div class="hint">
+    <b>拖拽</b> 环视 · <b>滚轮</b> 推拉 · <b>WASD/QE</b> 漫游<br>
+    <b>Shift</b> 加速 · <b>点击</b> 选星
+  </div>
+
+  <div class="dock">
+    <div class="group">
+      <div class="glabel">视角 · Viewpoint</div>
+      <div class="views">
+        <button class="vp-btn active" data-view="overlook">俯瞰</button>
+        <button class="vp-btn" data-view="skim">贴水</button>
+        <button class="vp-btn" data-view="core">星核</button>
+        <button class="vp-btn" data-view="rim">外缘</button>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="group">
+      <div class="glabel">数值区间 · Prime Range</div>
+      <div class="range-wrap">
+        <div class="track"></div>
+        <div class="fill" id="range-fill"></div>
+        <input type="range" id="range-lo" min="3" max="10000000" step="10000" value="3">
+        <input type="range" id="range-hi" min="3" max="10000000" step="10000" value="10000000">
+      </div>
+      <div class="range-out"><span id="lo-out">3</span><span id="hi-out">10 000 000</span></div>
+    </div>
+    <div class="divider"></div>
+    <div class="group">
+      <div class="glabel">快捷 · Chips</div>
+      <div class="chips">
+        <button class="chip active" data-lo="3" data-hi="10000000">全部</button>
+        <button class="chip" data-lo="3" data-hi="1000000">&lt;100万</button>
+        <button class="chip" data-lo="1000000" data-hi="5000000">100–500万</button>
+        <button class="chip" data-lo="5000000" data-hi="10000000">&gt;500万</button>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="group">
+      <div class="glabel">操作 · Actions</div>
+      <div class="views">
+        <button class="act-btn" id="btn-pause">暂停自转</button>
+        <button class="act-btn" id="btn-reset">重置视角</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loader" id="loader">
+    <div class="lily">🪷</div>
+    <h2>Nymphéas</h2>
+    <div class="lsub">正在点亮孪星池塘…</div>
+    <div class="lbar"><div id="load-bar"></div></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

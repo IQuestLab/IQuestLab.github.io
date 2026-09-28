@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>玩具兵大战 · Toy Soldier Battle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- ================= 首屏入口页 ================= -->
+  <section id="screen-entry" class="screen active">
+    <canvas id="bg-blocks"></canvas>
+    <div class="entry-wrap">
+      <div class="logo-blocks" aria-hidden="true">
+        <span class="lb lb1"></span><span class="lb lb2"></span><span class="lb lb3"></span>
+        <span class="lb lb4"></span><span class="lb lb5"></span><span class="lb lb6"></span>
+      </div>
+      <h1 class="game-title"><span class="tt-soldier">玩具兵</span><span class="tt-battle">大战</span></h1>
+      <p class="game-sub">吉卜力儿童房间 · 微缩 3D 多人 FPS · 发条哥斯拉突袭警报</p>
+      <div class="entry-actions">
+        <button id="btn-create" class="btn btn-red btn-big">🧱 新建房间</button>
+        <div class="join-row">
+          <input id="input-room" class="input-block" placeholder="输入房间码" maxlength="6" autocomplete="off">
+          <button id="btn-join" class="btn btn-blue">加入房间</button>
+        </div>
+      </div>
+      <div id="room-share" class="room-share hidden">
+        <div class="share-label">🎉 房间已创建！把链接甩给队友：</div>
+        <div class="share-row">
+          <input id="share-url" class="input-block" readonly>
+          <button id="btn-copy" class="btn btn-yellow">📋 一键复制</button>
+        </div>
+        <div class="share-tip">无需注册 · 打开即玩 · 建议 3–7 人一起开战</div>
+      </div>
+      <div class="entry-foot">纯前端实现 · AI 队友在线 · 倾斜移轴微缩摄影</div>
+    </div>
+  </section>
+
+  <!-- ================= 等待大厅页 ================= -->
+  <section id="screen-lobby" class="screen">
+    <div class="lobby-grid">
+      <div class="lobby-left">
+        <div class="room-code-card block-card studs">
+          <div class="card-label">房间码</div>
+          <div id="lobby-room-code" class="room-code">------</div>
+          <button id="btn-copy-code" class="btn btn-yellow btn-small">📋 复制房间码</button>
+        </div>
+        <div class="player-list-card block-card studs">
+          <div class="card-label">玩家 <span id="player-count" class="count-chip">1/8</span></div>
+          <div id="player-list" class="player-list"></div>
+        </div>
+        <button id="btn-start" class="btn btn-red btn-big">🚀 开始战斗</button>
+        <button id="btn-leave" class="btn btn-ghost btn-small">← 返回首页</button>
+      </div>
+      <div class="lobby-right">
+        <div class="preview-card block-card studs">
+          <div class="card-label">你的塑料小人</div>
+          <canvas id="preview-canvas"></canvas>
+          <div class="preview-tip">🖱️ 拖拽旋转 · 滚轮缩放</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 主战斗场景页 ================= -->
+  <section id="screen-game" class="screen">
+    <canvas id="game-canvas"></canvas>
+
+    <div id="hud">
+      <div id="crosshair"><span></span><span></span><span></span><span></span><b></b></div>
+      <div id="hitmarker">✕</div>
+
+      <!-- 左上：小地图 -->
+      <div id="minimap-wrap" class="hud-card block-card">
+        <canvas id="minimap" width="176" height="176"></canvas>
+        <div class="minimap-label">🗺️ 房间地图</div>
+      </div>
+
+      <!-- 右上：排行榜 -->
+      <div id="leaderboard-wrap" class="hud-card block-card">
+        <div class="lb-header" id="lb-toggle">🏆 排行榜 <span class="lb-arrow">▼</span></div>
+        <div id="lb-body" class="lb-body"></div>
+      </div>
+
+      <!-- 左下：血量 + 道具 + 聊天 -->
+      <div id="status-wrap">
+        <div id="health-card" class="hud-card block-card">
+          <div class="hp-row">
+            <div class="hp-icon">❤️</div>
+            <div class="hp-bar"><div id="hp-fill" class="hp-fill"></div><div id="hp-shield" class="hp-shield"></div></div>
+            <div id="hp-text" class="hp-text">100</div>
+          </div>
+          <div class="item-row">
+            <div class="item-chip" id="chip-battery" title="发条电池">🔋 <span>0</span></div>
+            <div class="item-chip" id="chip-magnet" title="强力磁铁">🧲 <span>0</span></div>
+            <div class="item-chip gear-chip" id="chip-gears" title="齿轮货币">⚙️ <span>0</span></div>
+          </div>
+        </div>
+        <div id="chat-card" class="hud-card">
+          <div id="chat-log" class="chat-log"></div>
+          <div id="chat-quick" class="chat-quick">
+            <button data-msg="冲啊！">冲啊！</button>
+            <button data-msg="掩护我！">掩护我！</button>
+            <button data-msg="哈哈哈哈哈">哈哈</button>
+            <button data-msg="BOSS 在哪？">BOSS？</button>
+          </div>
+          <div class="chat-input-row">
+            <input id="chat-input" class="chat-input" placeholder="发条消息… (Enter)" maxlength="60" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <!-- 右下：武器栏 + 弹药 -->
+      <div id="weapon-wrap">
+        <div id="reload-bar" class="reload-bar hidden"><div id="reload-fill"></div><span>换弹中…</span></div>
+        <div id="weapon-bar" class="weapon-bar"></div>
+        <div id="ammo-card" class="hud-card block-card">
+          <div id="ammo-count" class="ammo-count">30<span>/90</span></div>
+          <div id="weapon-name" class="weapon-name">泡泡枪</div>
+        </div>
+      </div>
+
+      <div id="killfeed" class="killfeed"></div>
+      <div id="interact-prompt" class="interact-prompt hidden">按 <b>E</b> 打开发条八音盒 🎵</div>
+
+      <!-- BOSS 突袭 -->
+      <div id="boss-banner" class="boss-banner hidden">
+        <div class="boss-banner-inner">
+          <div class="boss-warn">⚠️ 警 告 ⚠️</div>
+          <div class="boss-name">发条哥斯拉 来袭！</div>
+          <div class="boss-sub">CLOCKWORK GODZILLA RAID</div>
+        </div>
+      </div>
+      <div id="boss-hp-wrap" class="boss-hp-wrap hidden">
+        <div class="boss-hp-label">🦖 发条哥斯拉</div>
+        <div class="boss-hp-bar"><div id="boss-hp-fill"></div></div>
+      </div>
+
+      <div id="start-prompt" class="start-prompt">🖱️ 点击画面锁定鼠标<br><small>WASD 移动 · 左键射击 · R 换弹 · 1/2/3 切枪 · E 互动</small></div>
+      <div id="damage-vignette" class="damage-vignette"></div>
+    </div>
+
+    <!-- 发条八音盒商店 -->
+    <div id="shop-modal" class="modal-overlay hidden">
+      <div class="shop-box block-card">
+        <div class="shop-lid" id="shop-lid"></div>
+        <div class="shop-header">
+          <div class="shop-title">🎵 发条八音盒</div>
+          <div class="shop-gears">⚙️ <span id="shop-gear-count">0</span></div>
+          <button id="shop-close" class="btn btn-ghost btn-small">✕ 关闭</button>
+        </div>
+        <div id="shop-items" class="shop-items"></div>
+      </div>
+    </div>
+
+    <!-- 阵亡观战 -->
+    <div id="death-overlay" class="death-overlay hidden">
+      <div class="death-card block-card">
+        <div class="death-title">💥 你被击倒了！</div>
+        <div class="death-by" id="death-by">被 铁皮小队长 击败</div>
+        <div class="death-plane">✈️</div>
+        <div class="death-respawn-label">纸飞机观战中 · 复活倒计时</div>
+        <div class="death-respawn" id="death-respawn">8</div>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/audio.js"></script>
+  <script src="js/models.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

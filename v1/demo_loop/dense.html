@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wormhole Scroll Flight</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden; /* 隐藏浏览器默认滚动条 */
+        background-color: #000;
+        font-family: sans-serif;
+      }
+      canvas {
+        display: block;
+      }
+      .ui-hint {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255, 255, 255, 0.5);
+        pointer-events: none;
+        text-align: center;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        transition: opacity 0.5s;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ui-hint">
+      向下滚动加速 &nbsp;|&nbsp; 向上滚动后退 &nbsp;|&nbsp; 停止悬停
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      // --- 配置参数 ---
+      const CONFIG = {
+        ringCount: 60, // 虫洞圆环数量
+        ringSpacing: 500, // 环之间的Z轴间距
+        focalLength: 800, // 视距（FOV），越小透视感越强
+        baseSpeed: 10, // 基础悬停速度
+        maxSpeed: 800, // 最大速度限制
+        friction: 0.96, // 减速摩擦力 (0.9-0.99，越大停得越慢)
+        accelFactor: 1.5, // 滚动加速倍率
+        colorBaseHue: 240, // 基础颜色色相 (240=蓝)
+        colorWarmHue: 0, // 高速时的色相 (0=红)
+        trailFade: 0.2, // 拖尾清除透明度 (越小拖尾越长)
+      };
+
+      // --- 状态变量 ---
+      let width, height, cx, cy;
+      let speed = CONFIG.baseSpeed; // 当前实际速度
+      let scrollVelocity = 0; // 滚动产生的瞬间速度变化
+      let hue = CONFIG.colorBaseHue; // 当前颜色
+      let rings = []; // 存储圆环数据的数组
+
+      // --- 初始化 ---
+      function init() {
+        resize();
+        window.addEventListener("resize", resize);
+
+        // 初始化圆环位置
+        for (let i = 0; i < CONFIG.ringCount; i++) {
+          rings.push({
+            z: i * CONFIG.ringSpacing,
+            angle: i * 0.02, // 给每个环一点初始旋转
+          });
+        }
+
+        // 绑定滚动事件
+        window.addEventListener("wheel", handleScroll, { passive: false });
+
+        loop();
+      }
+
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        cx = width / 2;
+        cy = height / 2;
+      }
+
+      function handleScroll(e) {
+        e.preventDefault(); // 阻止页面实际滚动
+
+        // e.deltaY > 0 是向下滚，加速
+        // e.deltaY < 0 是向上滚，减速/后退
+        const delta = e.deltaY * CONFIG.accelFactor;
+
+        // 累加到速度意图上
+        scrollVelocity += delta;
+      }
+
+      // 触摸支持：用“手指滑动”模拟滚轮（手机端 iframe 里没有 wheel）
+      let touchStartY = 0;
+      window.addEventListener(
+        "touchstart",
+        (e) => {
+          if (!e.touches || !e.touches.length) return;
+          touchStartY = e.touches[0].clientY;
+        },
+        { passive: true }
+      );
+      window.addEventListener(
+        "touchmove",
+        (e) => {
+          if (!e.touches || !e.touches.length) return;
+          const touchY = e.touches[0].clientY;
+          const deltaY = touchStartY - touchY; // 上滑为正（更像滚轮向下）
+          scrollVelocity += deltaY * CONFIG.accelFactor;
+          touchStartY = touchY;
+          e.preventDefault();
+        },
+        { passive: false }
+      );
+
+      // --- 核心渲染循环 ---
+      function loop() {
+        requestAnimationFrame(loop);
+
+        // 1. 物理计算
+        // 速度平滑过渡 (Lerp)：让 speed 慢慢接近 scrollVelocity 的衰减版
+        // 如果不滚动，scrollVelocity 会慢慢归零，speed 会回到 baseSpeed
+        scrollVelocity *= CONFIG.friction;
+        speed = CONFIG.baseSpeed + Math.abs(scrollVelocity);
+
+        // 限制最大速度
+        if (speed > CONFIG.maxSpeed) speed = CONFIG.maxSpeed;
+
+        // 方向判断：scrollVelocity > 0 向前(蓝/白)，< 0 向后(其实视觉上通过环的移动方向表现)
+        // 这里我们简化：不管怎么滚，视觉上都是向前飞，只是速度变快。
+        // 如果你想实现“倒退”的视觉，可以给所有环的反向Z移动。
+
+        // 2. 颜色与模糊计算
+        // 速度比例 0.0 - 1.0
+        const speedRatio = Math.min(
+          (speed - CONFIG.baseSpeed) / (CONFIG.maxSpeed - CONFIG.baseSpeed),
+          1
+        );
+
+        // 暖色偏移：速度越快，从蓝(240)变到红(0)，且亮度增加
+        // 还可以加一点色相偏移让高速变成白色
+        if (speedRatio > 0.8) {
+          hue = 0; // 极速变红
+          ctx.globalAlpha = 1;
+        } else {
+          // 线性插值计算色相
+          const targetHue =
+            CONFIG.colorBaseHue -
+            speedRatio * (CONFIG.colorBaseHue - CONFIG.colorWarmHue);
+          hue = targetHue;
+        }
+
+        // 3. 绘制拖尾/动态模糊背景
+        // 速度越快，拖尾清除得越少，保留上一帧越多，形成运动模糊
+        // 同时根据速度添加一点径向渐变，让画面中心更有深度感
+
+        // 填充带透明度的背景，而不是 clearRect，产生拖尾
+        ctx.fillStyle = `rgba(0, 0, 0, ${CONFIG.trailFade})`;
+        ctx.fillRect(0, 0, width, height);
+
+        // 绘制中心发光（飞船喷射口感觉）
+        if (speedRatio > 0.1) {
+          const glowSize = speedRatio * 300;
+          const gradient = ctx.createRadialGradient(
+            cx,
+            cy,
+            0,
+            cx,
+            cy,
+            glowSize
+          );
+          gradient.addColorStop(
+            0,
+            `hsla(${hue}, 100%, 80%, ${speedRatio * 0.3})`
+          );
+          gradient.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, width, height);
+        }
+
+        // 4. 绘制虫洞环
+        // 排序：先画远的，再画近的 (Painter's Algorithm)
+        rings.sort((a, b) => b.z - a.z);
+
+        ctx.lineWidth = 2;
+
+        rings.forEach((ring) => {
+          // 更新 Z 轴位置
+          // 向上滑(倒退)还是向下滑(前进)？
+          // 逻辑：deltaY向下(正)是加速前进
+          let moveDir = -1;
+          if (scrollVelocity < 0) moveDir = 1; // 向上滚，我们让环反向移动（视觉上）或者仅仅减速
+
+          // 速度如果很慢，就让它倒退
+          if (speed < CONFIG.baseSpeed * 1.1 && scrollVelocity < 0) {
+            ring.z += 5; // 倒车
+          } else {
+            ring.z -= speed; // 前进
+          }
+
+          // 无限循环逻辑：如果环跑到了观察者身后，重置到最远处
+          if (ring.z < -CONFIG.focalLength) {
+            ring.z = CONFIG.ringCount * CONFIG.ringSpacing;
+          }
+          // 如果环跑到了太远的地方，拉回来（用于倒车时）
+          if (ring.z > CONFIG.ringCount * CONFIG.ringSpacing) {
+            ring.z = -CONFIG.focalLength;
+          }
+
+          // 投影计算 (3D -> 2D)
+          // scale = 焦距 / (焦距 + z)
+          const scale = CONFIG.focalLength / (CONFIG.focalLength + ring.z);
+
+          if (scale < 0) return; // 避免除以0或负数导致的反向渲染
+
+          // 环的基本半径 * 缩放
+          const radius = 2000 * scale;
+
+          // 根据深度计算透明度（远的暗，近的亮）
+          const alpha = Math.min(
+            1,
+            (1 - ring.z / (CONFIG.ringCount * CONFIG.ringSpacing)) * 2
+          );
+          if (alpha <= 0) return;
+
+          // 颜色计算
+          let color;
+          if (speed > CONFIG.maxSpeed * 0.8) {
+            // 高速时纯白/淡黄
+            color = `rgba(255, 255, 255, ${alpha})`;
+          } else {
+            // 低速时使用 HSL
+            color = `hsla(${hue}, 80%, 50%, ${alpha})`;
+          }
+
+          ctx.strokeStyle = color;
+
+          // 绘制圆环
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // 绘制连接线（让虫洞更连贯）- 可选
+          // ctx.beginPath();
+          // ctx.moveTo(cx, cy);
+          // ctx.lineTo(cx + Math.cos(ring.angle)*radius, cy + Math.sin(ring.angle)*radius);
+          // ctx.stroke();
+        });
+      }
+
+      init();
+    </script>
+  </body>
+</html>

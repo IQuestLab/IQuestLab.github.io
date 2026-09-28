@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Coral Dome · CORAL DOME — Ghibli-style Undersea Sandbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --abyss:#04202f;
+    --deep:#07304a;
+    --surface:#0b4258;
+    --glass:rgba(11,66,88,.62);
+    --cream:#f6ecd8;
+    --cream-dim:#c9d9d9;
+    --coral:#ff7a6b;
+    --kelp:#79dcb0;
+    --gold:#f5c451;
+    --pearl:#bfe9f2;
+    --line:rgba(191,233,242,.22);
+    --shadow:0 18px 40px -18px rgba(0,0,0,.85);
+    --r:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--abyss);}
+  body{
+    font-family:"Zen Maru Gothic",system-ui,sans-serif;
+    color:var(--cream);
+    -webkit-font-smoothing:antialiased;
+    touch-action:none;
+  }
+  canvas{display:block}
+  #app{position:fixed;inset:0}
+
+  /* ---------- 水下色调覆盖层 ---------- */
+  #tint{position:fixed;inset:0;pointer-events:none;z-index:2;
+    background:radial-gradient(120% 90% at 50% 40%, rgba(30,180,190,.10), rgba(3,26,44,.55) 70%, rgba(2,14,26,.85));
+    mix-blend-mode:multiply;transition:opacity .6s ease}
+  #vignette{position:fixed;inset:0;pointer-events:none;z-index:3;
+    box-shadow:inset 0 0 220px 60px rgba(0,10,20,.75)}
+
+  /* ---------- HUD ---------- */
+  .hud{position:fixed;z-index:10;pointer-events:none}
+  .panel{
+    background:var(--glass);
+    backdrop-filter:blur(14px) saturate(1.2);
+    -webkit-backdrop-filter:blur(14px) saturate(1.2);
+    border:1px solid var(--line);
+    border-radius:var(--r);
+    box-shadow:var(--shadow);
+  }
+  #brand{top:18px;left:18px;padding:12px 18px 12px 14px;display:flex;gap:12px;align-items:center}
+  #brand .mark{width:34px;height:34px;border-radius:10px;flex:0 0 auto;
+    background:conic-gradient(from 210deg,#79dcb0,#2fa8c7,#f5c451,#ff7a6b,#79dcb0);
+    box-shadow:0 0 18px rgba(121,220,176,.45)}
+  #brand h1{font-size:17px;font-weight:900;letter-spacing:.06em;line-height:1.1}
+  #brand small{display:block;font-family:"JetBrains Mono",monospace;font-size:9.5px;
+    letter-spacing:.34em;color:var(--pearl);opacity:.75;margin-top:3px}
+
+  #stats{top:18px;right:18px;padding:12px 14px;min-width:196px;display:grid;gap:7px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:14px;
+    font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.08em}
+  .row b{font-weight:700;color:var(--cream);font-size:11.5px}
+  .row span{color:var(--cream-dim);opacity:.8}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;
+    border:1px solid var(--line);font-size:10px;font-family:"JetBrains Mono",monospace}
+  .chip.ok{color:var(--kelp);border-color:rgba(121,220,176,.5);background:rgba(121,220,176,.10)}
+  .chip.bad{color:var(--coral);border-color:rgba(255,122,107,.5);background:rgba(255,122,107,.10)}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+
+  /* 生命 / 氧气 */
+  #vitals{left:18px;bottom:18px;padding:14px 16px;display:grid;gap:11px;width:230px}
+  .meter{display:grid;gap:5px}
+  .meter .lab{display:flex;justify-content:space-between;font-family:"JetBrains Mono",monospace;
+    font-size:9.5px;letter-spacing:.22em;color:var(--cream-dim)}
+  .bar{height:9px;border-radius:99px;background:rgba(0,0,0,.35);overflow:hidden;
+    border:1px solid rgba(255,255,255,.07)}
+  .bar i{display:block;height:100%;border-radius:99px;transition:width .18s ease-out}
+  #o2 i{background:linear-gradient(90deg,#2fa8c7,#bfe9f2)}
+  #hp i{background:linear-gradient(90deg,#ff7a6b,#f5c451)}
+  .bar.low i{animation:pulse 1s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.45}}
+
+  /* 快捷栏 */
+  #hotbar{bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:9px;
+    pointer-events:auto}
+  .slot{width:60px;height:66px;border-radius:11px;border:1px solid transparent;background:rgba(0,0,0,.28);
+    display:grid;grid-template-rows:38px 1fr;place-items:center;gap:2px;cursor:pointer;
+    transition:transform .16s cubic-bezier(.2,.9,.3,1.4),border-color .16s,background .16s;position:relative}
+  .slot:hover{transform:translateY(-4px);background:rgba(0,0,0,.42)}
+  .slot:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .slot.sel{border-color:var(--coral);background:rgba(255,122,107,.16);transform:translateY(-6px);
+    box-shadow:0 10px 24px -10px rgba(255,122,107,.8)}
+  .slot img{width:38px;height:38px;image-rendering:pixelated;border-radius:6px;
+    filter:drop-shadow(0 3px 5px rgba(0,0,0,.5))}
+  .slot .n{font-family:"JetBrains Mono",monospace;font-size:9px;color:var(--cream-dim);letter-spacing:.05em}
+  .slot .k{position:absolute;top:3px;left:5px;font-family:"JetBrains Mono",monospace;font-size:8px;
+    color:var(--cream-dim);opacity:.55}
+  .slot.empty img{opacity:.28;filter:grayscale(1)}
+
+  /* 准星 */
+  #cross{left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;z-index:9}
+  #cross svg{display:block}
+  #cross .ring{transition:stroke-dashoffset .06s linear}
+  #target{left:50%;top:calc(50% + 26px);transform:translateX(-50%);
+    font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.16em;
+    color:var(--cream);text-shadow:0 2px 8px #000;opacity:0;transition:opacity .15s}
+
+  /* 提示气泡 */
+  #prompt{left:50%;bottom:118px;transform:translateX(-50%);padding:9px 16px;border-radius:99px;
+    font-size:12.5px;letter-spacing:.05em;opacity:0;transition:opacity .2s,transform .2s;
+    background:rgba(11,66,88,.85);border:1px solid var(--line);backdrop-filter:blur(10px)}
+  #prompt kbd{font-family:"JetBrains Mono",monospace;background:var(--gold);color:#12303f;
+    border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700;margin:0 3px}
+  #prompt.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+  /* 吐司 */
+  #toasts{right:18px;bottom:18px;display:grid;gap:8px;justify-items:end}
+  .toast{padding:9px 14px;border-radius:11px;font-size:12.5px;background:rgba(11,66,88,.9);
+    border:1px solid var(--line);border-left:3px solid var(--kelp);box-shadow:var(--shadow);
+    animation:slideIn .35s cubic-bezier(.2,.9,.3,1.2) both}
+  .toast.warn{border-left-color:var(--coral)}
+  .toast.gold{border-left-color:var(--gold)}
+  @keyframes slideIn{from{opacity:0;transform:translateX(24px)}}
+
+  /* 对话 */
+  #dlg{position:fixed;z-index:20;inset:0;display:none;place-items:center;
+    background:radial-gradient(60% 60% at 50% 50%,rgba(3,26,44,.55),rgba(2,12,22,.88));
+    backdrop-filter:blur(3px)}
+  #dlg.on{display:grid;animation:fade .25s ease-out}
+  @keyframes fade{from{opacity:0}}
+  #dlgBox{width:min(560px,92vw);padding:26px 28px 22px;border-radius:20px;
+    background:linear-gradient(160deg,rgba(14,72,96,.96),rgba(6,38,56,.97));
+    border:1px solid rgba(191,233,242,.28);box-shadow:0 40px 90px -30px #000;
+    animation:pop .35s cubic-bezier(.2,.9,.3,1.3) both}
+  @keyframes pop{from{opacity:0;transform:translateY(18px) scale(.96)}}
+  #dlgWho{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  #dlgAv{width:44px;height:44px;border-radius:13px;flex:0 0 auto;
+    background:linear-gradient(150deg,var(--kelp),#2fa8c7);display:grid;place-items:center;font-size:22px}
+  #dlgWho h3{font-size:17px;font-weight:900;letter-spacing:.04em}
+  #dlgWho small{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.24em;
+    color:var(--pearl);opacity:.7}
+  #dlgText{font-size:15px;line-height:1.85;color:var(--cream);min-height:84px;
+    border-left:2px solid rgba(255,122,107,.5);padding-left:14px;margin-bottom:16px}
+  #dlgText .cur{color:var(--coral)}
+  #dlgActs{display:flex;flex-wrap:wrap;gap:9px}
+  .btn{font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.05em;cursor:pointer;
+    padding:10px 18px;border-radius:11px;border:1px solid var(--line);color:var(--cream);
+    background:rgba(255,255,255,.06);transition:transform .14s,background .14s,box-shadow .14s}
+  .btn:hover{transform:translateY(-2px);background:rgba(255,255,255,.12)}
+  .btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .btn.pri{background:var(--coral);color:#2b0f0c;border-color:transparent;
+    box-shadow:0 10px 26px -12px var(--coral)}
+  .btn.pri:hover{background:#ff9385}
+  .btn.gold{background:var(--gold);color:#3a2a05;border-color:transparent}
+  .btn[disabled]{opacity:.4;cursor:not-allowed;transform:none}
+
+  /* 开场 / 暂停 */
+  #gate{position:fixed;inset:0;z-index:30;display:grid;place-items:center;
+    background:
+      radial-gradient(90% 70% at 20% 10%,rgba(47,168,199,.30),transparent 60%),
+      radial-gradient(70% 60% at 85% 85%,rgba(255,122,107,.22),transparent 60%),
+      linear-gradient(170deg,#062b3f,#03151f 70%);
+  }
+  #gate.off{display:none}
+  #gateIn{width:min(880px,92vw);display:grid;grid-template-columns:1.15fr .85fr;gap:34px;align-items:center}
+  @media(max-width:820px){#gateIn{grid-template-columns:1fr;gap:22px}}
+  #gateIn h2{font-size:clamp(34px,6vw,60px);font-weight:900;line-height:.98;letter-spacing:-.01em}
+  #gateIn h2 em{font-style:normal;color:var(--coral);display:block}
+  #gateIn .sub{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.4em;
+    color:var(--pearl);opacity:.75;margin:14px 0 18px}
+  #gateIn p{font-size:14.5px;line-height:1.9;color:var(--cream-dim);max-width:46ch}
+  #keys{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:20px 0 24px;
+    font-size:12.5px;color:var(--cream-dim);align-items:center}
+  #keys kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:rgba(255,255,255,.09);
+    border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:3px 8px;color:var(--cream);
+    white-space:nowrap;justify-self:start}
+  #play{font-size:16px;padding:16px 34px;border-radius:14px}
+  #gateArt{aspect-ratio:1;border-radius:24px;position:relative;overflow:hidden;
+    border:1px solid var(--line);background:
+      radial-gradient(70% 60% at 50% 90%,rgba(121,220,176,.35),transparent 65%),
+      linear-gradient(180deg,#0a4a63,#04202f);
+    box-shadow:0 40px 90px -40px #000}
+  #gateArt .bub{position:absolute;border-radius:50%;border:1px solid rgba(191,233,242,.5);
+    background:rgba(191,233,242,.10);animation:rise linear infinite}
+  @keyframes rise{from{transform:translateY(110%) scale(.6);opacity:0}
+    20%{opacity:.9}to{transform:translateY(-140%) scale(1.1);opacity:0}}
+  #gateArt .fish{position:absolute;font-size:30px;animation:swim 14s linear infinite;filter:drop-shadow(0 0 12px rgba(245,196,81,.6))}
+  @keyframes swim{from{left:-12%}to{left:108%}}
+  #gateArt .dome{position:absolute;left:50%;bottom:-14%;transform:translateX(-50%);
+    width:78%;aspect-ratio:1/.62;border-radius:50% 50% 0 0;
+    background:linear-gradient(180deg,rgba(191,233,242,.30),rgba(121,220,176,.12));
+    border:2px solid rgba(191,233,242,.45);box-shadow:inset 0 0 60px rgba(191,233,242,.25)}
+  #loadNote{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.2em;
+    color:var(--cream-dim);opacity:.6;margin-top:14px}
+  #err{position:fixed;inset:0;z-index:99;display:none;place-items:center;background:#04202f;padding:24px;text-align:center}
+  #err.on{display:grid}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  @media(max-width:640px){
+    #vitals{width:180px} .slot{width:46px;height:54px} .slot img{width:28px;height:28px}
+    #stats{min-width:150px}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="tint"></div>
+<div id="vignette"></div>
+
+<!-- HUD -->
+<div class="hud panel" id="brand">
+  <div class="mark"></div>
+  <div><h1>Coral Dome</h1><small>CORAL DOME</small></div>
+</div>
+
+<div class="hud panel" id="stats">
+  <div class="row"><span>DEPTH</span><b id="sDepth">—</b></div>
+  <div class="row"><span>CURRENT</span><b id="sFlow">—</b></div>
+  <div class="row"><span>PEARL</span><b id="sPearl">0</b></div>
+  <div class="row"><span>FPS</span><b id="sFps">—</b></div>
+  <div class="row"><span>AIR</span><span class="chip bad" id="sAir"><i class="dot"></i>Open Water</span></div>
+</div>
+
+<div class="hud panel" id="vitals">
+  <div class="meter"><div class="lab"><span>O₂</span><span id="o2n">100%</span></div>
+    <div class="bar" id="o2"><i style="width:100%"></i></div></div>
+  <div class="meter"><div class="lab"><span>HP</span><span id="hpn">100%</span></div>
+    <div class="bar" id="hp"><i style="width:100%"></i></div></div>
+</div>
+
+<div class="hud panel" id="hotbar"></div>
+
+<div class="hud" id="cross">
+  <svg width="26" height="26" viewBox="0 0 26 26">
+    <circle cx="13" cy="13" r="9" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="3"/>
+    <circle id="crossRing" cx="13" cy="13" r="9" fill="none" stroke="#f5c451" stroke-width="3"
+      stroke-dasharray="56.5" stroke-dashoffset="56.5" transform="rotate(-90 13 13)" stroke-linecap="round"/>
+    <circle cx="13" cy="13" r="1.6" fill="#f6ecd8"/>
+    <path d="M13 3.5v3M13 19.5v3M3.5 13h3M19.5 13h3" stroke="#f6ecd8" stroke-width="1.4" opacity=".85"/>
+  </svg>
+</div>
+<div class="hud" id="target"></div>
+<div class="hud" id="prompt"></div>
+<div class="hud" id="toasts"></div>
+
+<!-- 对话 -->
+<div id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgWho">
+  <div id="dlgBox" class="panel">
+    <div id="dlgWho"><div id="dlgAv">🧜</div>
+      <div><h3 id="dlgName">—</h3><small id="dlgRole">—</small></div></div>
+    <div id="dlgText"></div>
+    <div id="dlgActs"></div>
+  </div>
+</div>
+
+<!-- 开场 -->
+<div id="gate">
+  <div id="gateIn">
+    <div>
+      <h2>Undersea<em>Habitat</em></h2>
+      <div class="sub">VOXEL SANDBOX · GHIBLI DEEP SEA</div>
+      <p>In a lagoon pierced by light, breathing is something you have to build. Wall off a pocket of air with a glass dome, plant seagrass, trade pearls with the deep-sea folk — then keep diving toward the darker depths.</p>
+      <div id="keys">
+        <kbd>W A S D</kbd><span>Swim / Walk</span>
+        <kbd>Space / Shift</kbd><span>Rise · Dive (underwater)</span>
+        <kbd>Hold Left Click</kbd><span>Mine block</span>
+        <kbd>Right Click</kbd><span>Place block</span>
+        <kbd>1 – 9 / Scroll</kbd><span>Switch hotbar</span>
+        <kbd>E</kbd><span>Talk / Trade with villager</span>
+        <kbd>F</kbd><span>Creative mode (infinite blocks)</span>
+        <kbd>T</kbd><span>Switch texture style</span>
+        <kbd>Esc</kbd><span>Pause</span>
+      </div>
+      <button class="btn pri" id="play">DIVE INTO THE LAGOON</button>
+      <div id="loadNote">Generating seabed terrain…</div>
+    </div>
+    <div id="gateArt" aria-hidden="true">
+      <div class="dome"></div>
+      <div class="fish" style="top:22%;animation-duration:17s">🐠</div>
+      <div class="fish" style="top:44%;animation-duration:23s;animation-delay:-8s;font-size:22px">🐟</div>
+      <div class="bub" style="left:22%;width:14px;height:14px;animation-duration:7s"></div>
+      <div class="bub" style="left:44%;width:9px;height:9px;animation-duration:9s;animation-delay:-3s"></div>
+      <div class="bub" style="left:63%;width:18px;height:18px;animation-duration:11s;animation-delay:-6s"></div>
+      <div class="bub" style="left:78%;width:11px;height:11px;animation-duration:8s;animation-delay:-2s"></div>
+    </div>
+  </div>
+</div>
+
+<div id="err"><div><h2 style="margin-bottom:12px">Unable to start 3D rendering</h2>
+<p style="color:#c9d9d9;line-height:1.8" id="errMsg">Your browser may not support WebGL, or CDN resources failed to load. Please check your network and refresh.</p></div></div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+
+<script type="module">
+let THREE, EffectComposer, RenderPass, UnrealBloomPass, OutputPass;
+try{
+  THREE = await import('three');
+  ({EffectComposer} = await import('three/addons/postprocessing/EffectComposer.js'));
+  ({RenderPass}     = await import('three/addons/postprocessing/RenderPass.js'));
+  ({UnrealBloomPass}= await import('three/addons/postprocessing/UnrealBloomPass.js'));
+  ({OutputPass}     = await import('three/addons/postprocessing/OutputPass.js'));
+}catch(e){
+  document.getElementById('err').classList.add('on');
+  document.getElementById('errMsg').textContent = 'Three.js failed to load: '+e.message;
+  throw e;
+}
+
+/* ============================================================
+   0. 常量与方块定义
+   ============================================================ */
+const W=64, H=48, D=64, CS=16, SEA=40;
+const CX=W/CS, CZ=D/CS;
+
+const B={AIR:0,SAND:1,ROCK:2,PEARL:3,CORAL_P:4,CORAL_O:5,CORAL_V:6,KELP:7,
+         GOLD:8,GLASS:9,LAMP:10,PLANK:11,FARM:12,SEED:13,ORE:14,BASALT:15};
+
+// tiles: [top, side, bottom] 图集索引
+const DEF={
+ [B.SAND]  :{n:'Sea Sand',   t:[0,0,0],  solid:1, hard:.35, drop:B.SAND},
+ [B.ROCK]  :{n:'Reef Rock',   t:[1,1,1],  solid:1, hard:.9,  drop:B.ROCK},
+ [B.PEARL] :{n:'Pearl Stone', t:[2,2,2],  solid:1, hard:1.1, drop:B.PEARL},
+ [B.CORAL_P]:{n:'Pink Coral',t:[3,3,3],  solid:1, hard:.4,  drop:B.CORAL_P},
+ [B.CORAL_O]:{n:'Orange Coral',t:[4,4,4],  solid:1, hard:.4,  drop:B.CORAL_O},
+ [B.CORAL_V]:{n:'Purple Coral',t:[5,5,5],  solid:1, hard:.4,  drop:B.CORAL_V},
+ [B.KELP]  :{n:'Seagrass',   t:[7,6,7],  solid:0, plant:1, hard:.15, drop:B.KELP},
+ [B.GOLD]  :{n:'Gold Brick',   t:[8,8,8],  solid:1, hard:1.0, drop:B.GOLD, emis:.25},
+ [B.GLASS] :{n:'Dome Glass',t:[9,9,9], solid:1, hard:.5,  drop:B.GLASS, trans:1},
+ [B.LAMP]  :{n:'Coral Lamp', t:[10,10,10],solid:1,hard:.6, drop:B.LAMP, emis:1, light:1},
+ [B.PLANK] :{n:'Driftwood Deck',t:[11,11,11],solid:1,hard:.7,drop:B.PLANK},
+ [B.FARM]  :{n:'Farmland',   t:[12,0,0], solid:1, hard:.4, drop:B.FARM},
+ [B.SEED]  :{n:'Seagrass Sprout', t:[13,13,13],solid:0,plant:1,hard:.1, drop:B.SEED},
+ [B.ORE]   :{n:'Pearl Ore', t:[14,14,14],solid:1,hard:1.3,drop:'pearl'},
+ [B.BASALT]:{n:'Deep-sea Rock', t:[15,15,15],solid:1,hard:1.5,drop:B.BASALT},
+};
+const isSolid = b => b!==0 && DEF[b] && DEF[b].solid;
+const isOpaque= b => b!==0 && DEF[b] && !DEF[b].trans && !DEF[b].plant;
+
+/* ============================================================
+   1. 程序化纹理图集（自定义纹理 · 3 套调色）
+   ============================================================ */
+const TS=32, GRID=4, ATLAS=TS*GRID;
+const PALETTES=[
+  {name:'Morning Lagoon', sand:['#e8d6a8','#d8c48e'], rock:['#7d94a3','#68808f'], pearl:['#dfeef2','#bcd8e2'],
+    cp:['#ff9fb0','#f4738c'], co:['#ffa860','#f2813f'], cv:['#c39bf0','#9d6fdc'],
+    kelp:['#5fc48c','#3f9f6e'], gold:['#f7d27a','#e0ae45'], glass:['#bfe9f2','#8fd4e6'],
+    lamp:['#ffe9a8','#f5c451'], plank:['#c39a6b','#a87f52'], farm:['#8a6b46','#6f5436'],
+    seed:['#79dcb0','#4fb489'], ore:['#9fb6c4','#e8f6fa'], basalt:['#3d4a58','#2b3642']},
+  {name:'Dusk Warm Tide', sand:['#f0d3a0','#dcb87e'], rock:['#8b7f92','#6f6478'], pearl:['#f2e2e6','#d3bcc6'],
+    cp:['#ff8fa3','#e05f7a'], co:['#ff9558','#e06c33'], cv:['#b98ae6','#8f5fc4'],
+    kelp:['#7fc98a','#57a06a'], gold:['#ffd27a','#e8b13f'], glass:['#f2d8e6','#d3a8c4'],
+    lamp:['#ffe0b0','#f5a851'], plank:['#c98f63','#a97447'], farm:['#96704a','#785737'],
+    seed:['#8fd8a8','#5fae80'], ore:['#a89aa8','#f2e6ee'], basalt:['#4a3f52','#372e3e']},
+  {name:'Nightglow Abyss', sand:['#9fb0c4','#8496ad'], rock:['#4e6070','#3b4a58'], pearl:['#a8d8e8','#7fb6cc'],
+    cp:['#e07fa8','#b85c86'], co:['#e08a5c','#b86a42'], cv:['#9a7ad0','#7456ab'],
+    kelp:['#4fae8c','#3a8a6c'], gold:['#d8b060','#b08c42'], glass:['#8fc8de','#6aa4bc'],
+    lamp:['#c8f0ff','#7fd0f0'], plank:['#8a705a','#6e5946'], farm:['#5f4f3c','#4a3d2e'],
+    seed:['#5fc4a0','#469c7c'], ore:['#7a8ea0','#c8ecf8'], basalt:['#2b3644','#1e2732']}
+];
+let palIdx=0;
+
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+const atlasCanvas=document.createElement('canvas');
+atlasCanvas.width=atlasCanvas.height=ATLAS;
+const actx=atlasCanvas.getContext('2d');
+
+function px(ctx,x,y,c,w=1,h=1){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
+function noiseFill(ctx,rnd,cols,density=.5){
+  for(let y=0;y<TS;y++)for(let x=0;x<TS;x++){
+    const r=rnd();
+    if(r<density){ px(ctx,x,y, cols[r<density*.55?0:1]); }
+  }
+}
+function drawTile(ctx,idx,pal,style){
+  const ox=(idx%GRID)*TS, oy=Math.floor(idx/GRID)*TS;
+  ctx.save(); ctx.translate(ox,oy);
+  ctx.beginPath();ctx.rect(0,0,TS,TS);ctx.clip();
+  const rnd=mulberry(idx*7919+palIdx*131+17);
+  const C=(k)=>pal[k];
+  switch(idx){
+    case 0: noiseFill(ctx,rnd,C('sand'),.85);
+      for(let i=0;i<26;i++){const x=rnd()*TS|0,y=rnd()*TS|0;px(ctx,x,y,C('sand')[1],2,1)} break;
+    case 1: noiseFill(ctx,rnd,C('rock'),.9);
+      for(let i=0;i<10;i++){const x=rnd()*TS|0,y=rnd()*TS|0;px(ctx,x,y,'rgba(255,255,255,.10)',3,2)} break;
+    case 2: noiseFill(ctx,rnd,C('pearl'),.85);
+      for(let i=0;i<8;i++){const x=rnd()*(TS-6)|0,y=rnd()*(TS-6)|0;
+        ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.arc(x+3,y+3,2.4,0,7);ctx.fill()} break;
+    case 3: case 4: case 5:{
+      const base=idx===3?C('cp'):idx===4?C('co'):C('cv');
+      noiseFill(ctx,rnd,base,.9);
+      ctx.strokeStyle=base[1];ctx.lineWidth=2.4;ctx.lineCap='round';
+      for(let i=0;i<7;i++){ctx.beginPath();const x=rnd()*TS,y=rnd()*TS;
+        ctx.moveTo(x,y);ctx.lineTo(x+(rnd()-.5)*14,y-6-rnd()*7);ctx.stroke()}
+      ctx.fillStyle='rgba(255,255,255,.35)';
+      for(let i=0;i<12;i++){ctx.beginPath();ctx.arc(rnd()*TS,rnd()*TS,1.5,0,7);ctx.fill()}
+      break;}
+    case 6:{ // 海草侧面
+      ctx.fillStyle='rgba(6,40,52,0)';ctx.clearRect(0,0,TS,TS);
+      for(let i=0;i<5;i++){const x=3+i*6+rnd()*2;
+        ctx.fillStyle=C('kelp')[i%2];ctx.fillRect(x,0,4,TS);
+        ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(x,0,1.4,TS);
+        for(let k=0;k<4;k++){const y=rnd()*TS;ctx.fillStyle=C('kelp')[1];ctx.fillRect(x-1.5,y,7,2)}}
+      break;}
+    case 7:{ ctx.clearRect(0,0,TS,TS);
+      ctx.fillStyle=C('kelp')[0];ctx.beginPath();ctx.ellipse(TS/2,TS/2,10,13,0,0,7);ctx.fill();
+      ctx.fillStyle=C('kelp')[1];ctx.beginPath();ctx.ellipse(TS/2+2,TS/2+2,6,9,0,0,7);ctx.fill(); break;}
+    case 8:{ noiseFill(ctx,rnd,C('gold'),.9);
+      ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1.5;
+      ctx.strokeRect(3.5,3.5,TS-7,TS-7);ctx.beginPath();
+      ctx.moveTo(3.5,3.5);ctx.lineTo(TS-3.5,TS-3.5);ctx.moveTo(TS-3.5,3.5);ctx.lineTo(3.5,TS-3.5);ctx.stroke(); break;}
+    case 9:{ ctx.clearRect(0,0,TS,TS);
+      ctx.fillStyle='rgba(191,233,242,.16)';ctx.fillRect(0,0,TS,TS);
+      ctx.strokeStyle=C('glass')[0];ctx.lineWidth=2.6;ctx.strokeRect(1.3,1.3,TS-2.6,TS-2.6);
+      ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.moveTo(5,TS-6);ctx.lineTo(TS-8,5);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(13,TS-6);ctx.lineTo(TS-4,9);ctx.stroke(); break;}
+    case 10:{ noiseFill(ctx,rnd,C('lamp'),.9);
+      ctx.fillStyle='rgba(255,255,255,.75)';
+      for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(6+rnd()*20,6+rnd()*20,2.6,0,7);ctx.fill()}
+      ctx.strokeStyle=C('lamp')[1];ctx.lineWidth=2;ctx.strokeRect(2,2,TS-4,TS-4); break;}
+    case 11:{ for(let y=0;y<TS;y+=8){px(ctx,0,y,C('plank')[0],TS,7);
+        px(ctx,0,y+7,C('plank')[1],TS,1)}
+      for(let i=0;i<5;i++){const y=rnd()*TS|0;px(ctx,rnd()*TS|0,y,'rgba(0,0,0,.18)',8,1)} break;}
+    case 12:{ noiseFill(ctx,rnd,C('farm'),.9);
+      for(let y=4;y<TS;y+=7){px(ctx,0,y,C('farm')[1],TS,2.5)} break;}
+    case 13:{ ctx.clearRect(0,0,TS,TS);
+      ctx.fillStyle=C('seed')[0];
+      for(let i=0;i<6;i++){const x=4+rnd()*24,y=4+rnd()*24;
+        ctx.beginPath();ctx.ellipse(x,y,3.4,5,rnd()*3,0,7);ctx.fill()}
+      break;}
+    case 14:{ noiseFill(ctx,rnd,C('ore'),.9);
+      for(let i=0;i<7;i++){const x=3+rnd()*25,y=3+rnd()*25;
+        ctx.fillStyle='#eafcff';ctx.beginPath();ctx.arc(x,y,2.8,0,7);ctx.fill();
+        ctx.fillStyle='rgba(120,200,220,.6)';ctx.beginPath();ctx.arc(x+.8,y+.8,1.4,0,7);ctx.fill()} break;}
+    case 15:{ noiseFill(ctx,rnd,C('basalt'),.95);
+      for(let i=0;i<8;i++){px(ctx,rnd()*TS|0,rnd()*TS|0,'rgba(255,255,255,.07)',4,3)} break;}
+  }
+  ctx.restore();
+}
+function buildAtlas(){
+  const pal=PALETTES[palIdx];
+  for(let i=0;i<GRID*GRID;i++) drawTile(actx,i,pal);
+  if(tex) tex.needsUpdate=true;
+  buildHotbarIcons();
+}
+const tex=new THREE.CanvasTexture(atlasCanvas);
+tex.magFilter=THREE.NearestFilter; tex.minFilter=THREE.NearestMipmapLinearFilter;
+tex.colorSpace=THREE.SRGBColorSpace; tex.generateMipmaps=true;
+tex.anisotropy=4;
+
+/* ============================================================
+   2. 世界数据 + 噪声
+   ============================================================ */
+const world=new Uint8Array(W*H*D);
+const idx=(x,y,z)=>(y*D+z)*W+x;
+const inB=(x,y,z)=>x>=0&&x<W&&y>=0&&y<H&&z>=0&&z<D;
+function getB(x,y,z){ if(!inB(x,y,z)) return (y<0)?B.BASALT:0; return world[idx(x,y,z)] }
+function setB(x,y,z,v){ if(inB(x,y,z)) world[idx(x,y,z)]=v }
+
+function h2(x,z,s){let n=Math.sin(x*127.1+z*311.7+s*74.7)*43758.5453;return n-Math.floor(n)}
+function smooth(t){return t*t*(3-2*t)}
+function n2(x,z,s){
+  const xi=Math.floor(x),zi=Math.floor(z),xf=x-xi,zf=z-zi;
+  const a=h2(xi,zi,s),b=h2(xi+1,zi,s),c=h2(xi,zi+1,s),d=h2(xi+1,zi+1,s);
+  const u=smooth(xf),v=smooth(zf);
+  return (a*(1-u)+b*u)*(1-v)+(c*(1-u)+d*u)*v;
+}
+function n3(x,y,z,s){
+  const xi=Math.floor(x),yi=Math.floor(y),zi=Math.floor(z);
+  const xf=x-xi,yf=y-yi,zf=z-zi,u=smooth(xf),v=smooth(yf),w=smooth(zf);
+  const L=(a,b,t)=>a*(1-t)+b*t;
+  const c000=h2(xi+zi*57,yi*13,s),c100=h2(xi+1+zi*57,yi*13,s);
+  const c010=h2(xi+(zi+1)*57,yi*13,s),c110=h2(xi+1+(zi+1)*57,yi*13,s);
+  const c001=h2(xi+zi*57,yi+1+13,s),c101=h2(xi+1+zi*57,yi+1+13,s);
+  const c011=h2(xi+(zi+1)*57,yi+1+13,s),c111=h2(xi+1+(zi+1)*57,yi+1+13,s);
+  return L(L(L(c000,c100,u),L(c010,c110,u),v), L(L(c001,c101,u),L(c011,c111,u),v), w);
+}
+function fbm2(x,z,s){let a=0,amp=1,f=1,tot=0;for(let i=0;i<4;i++){a+=n2(x*f,z*f,s+i)*amp;tot+=amp;amp*=.5;f*=2}return a/tot}
+
+const heightMap=new Int16Array(W*D);
+function generate(){
+  for(let x=0;x<W;x++)for(let z=0;z<D;z++){
+    const base=fbm2(x*.045,z*.045,3)*10;
+    const ridge=Math.abs(fbm2(x*.09,z*.09,11)-.5)*2;
+    let h=Math.floor(20+base+ridge*7);
+    h=Math.max(6,Math.min(SEA-3,h));
+    heightMap[z*W+x]=h;
+    for(let y=0;y<=h;y++){
+      let b;
+      if(y>h-1) b=B.SAND;
+      else if(y>h-4) b=B.SAND;
+      else if(y>6) b=B.ROCK;
+      else b=B.BASALT;
+      if(y<h-3 && n3(x*.13,y*.13,z*.13,29)>.63) b=B.PEARL;
+      if(y<12 && n3(x*.16,y*.16,z*.16,41)>.70) b=B.ORE;
+      // 洞穴
+      if(y>2 && y<h-1 && n3(x*.09,y*.14,z*.09,53)>.685) b=B.AIR;
+      setB(x,y,z,b);
+    }
+    for(let y=h+1;y<SEA;y++) setB(x,y,z,B.AIR);
+  }
+  // 珊瑚 & 海草森林
+  const rnd=mulberry(20240711);
+  for(let i=0;i<420;i++){
+    const x=2+(rnd()*(W-4))|0, z=2+(rnd()*(D-4))|0;
+    const h=heightMap[z*W+x]; if(h<8) continue;
+    const t=rnd();
+    if(t<.42){ // 珊瑚簇
+      const type=[B.CORAL_P,B.CORAL_O,B.CORAL_V][(rnd()*3)|0];
+      const hh=1+(rnd()*4|0);
+      for(let y=1;y<=hh;y++) setB(x,h+y,z,type);
+      if(rnd()<.6){const dx=rnd()<.5?1:-1; if(getB(x+dx,h+1,z)===0) setB(x+dx,h+1,z,type)}
+      if(rnd()<.6){const dz=rnd()<.5?1:-1; if(getB(x,h+1,z+dz)===0) setB(x,h+1,z+dz,type)}
+    } else if(t<.92){ // 海草森林
+      const hh=3+(rnd()*7|0);
+      for(let y=1;y<=hh;y++){ if(getB(x,h+y,z)!==0) break; setB(x,h+y,z,B.KELP) }
+    } else { // 礁石
+      const hh=1+(rnd()*3|0);
+      for(let y=1;y<=hh;y++)for(let dx=0;dx<=1;dx++)for(let dz=0;dz<=1;dz++)
+        if(rnd()<.7) setB(x+dx,h+y,z+dz,B.ROCK);
+    }
+  }
+  buildStarterHabitat();
+}
+
+function buildStarterHabitat(){
+  const cx=32, cz=32;
+  let h=heightMap[cz*W+cx];
+  for(let x=cx-8;x<=cx+8;x++)for(let z=cz-8;z<=cz+8;z++){
+    if(!inB(x,0,z))continue;
+    const hh=heightMap[z*W+x];
+    for(let y=hh+1;y<=h;y++) setB(x,y,z,B.PLANK);
+    heightMap[z*W+x]=h;
+  }
+  const R=6.5;
+  for(let x=-8;x<=8;x++)for(let y=-1;y<=8;y++)for(let z=-8;z<=8;z++){
+    const d=Math.sqrt(x*x+y*y*1.15+z*z);
+    const wx=cx+x, wy=h+y, wz=cz+z;
+    if(!inB(wx,wy,wz))continue;
+    if(d<=R && wy>heightMap[wz*W+wx]) setB(wx,wy,wz,B.AIR);
+    else if(d>R && d<=R+1.05 && y>=-1) setB(wx,wy,wz,B.GLASS);
+  }
+  // 门
+  for(let y=1;y<=3;y++)for(let x=-1;x<=1;x++) setB(cx+x,h+y,cz+7,B.AIR);
+  // 内部：灯、耕地、金砖
+  setB(cx-4,h+1,cz-4,B.LAMP); setB(cx+4,h+1,cz-4,B.LAMP);
+  setB(cx-4,h+1,cz+4,B.LAMP); setB(cx+4,h+1,cz+4,B.LAMP);
+  setB(cx,h+1,cz-5,B.GOLD); setB(cx+1,h+1,cz-5,B.GOLD);
+  for(let x=-3;x<=3;x++)for(let z=2;z<=5;z++) setB(cx+x,h+1,cz+z,B.FARM);
+  setB(cx-2,h+2,cz-2,B.LAMP);
+  // 外部农场
+  for(let x=-6;x<=-2;x++)for(let z=8;z<=12;z++){
+    const wx=cx+x,wz=cz+z; if(!inB(wx,0,wz))continue;
+    const hh=heightMap[wz*W+wx];
+    setB(wx,hh+1,wz,B.FARM);
+    if((x+z)%2===0) setB(wx,hh+2,wz,B.SEED);
+  }
+}
+
+// Keep the player spawn inside a guaranteed open chamber above the habitat floor.
+const PLAYER_SPAWN={x:32.5,z:32.5,y:0};
+function preparePlayerSpawn(){
+  const cx=Math.floor(PLAYER_SPAWN.x), cz=Math.floor(PLAYER_SPAWN.z);
+  const floor=heightMap[cz*W+cx];
+  // Clear a small room so uneven terrain cannot cover the starting area.
+  for(let x=cx-2;x<=cx+2;x++) for(let z=cz-2;z<=cz+2;z++)
+    for(let y=floor+1;y<=floor+4;y++) setB(x,y,z,B.AIR);
+  PLAYER_SPAWN.y=floor+1.05;
+}
+
+/* ============================================================
+   3. 渲染器 / 场景
+   ============================================================ */
+const app=document.getElementById('app');
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.06;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=false;
+app.appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+const FOG_WATER=new THREE.Color(0x0d5f7a), FOG_AIR=new THREE.Color(0x8fd8e8);
+scene.fog=new THREE.FogExp2(FOG_WATER.getHex(),0.030);
+scene.background=new THREE.Color(0x0a4a63);
+
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.08,400);
+
+const hemi=new THREE.HemisphereLight(0x9fe8ff,0x0a3a4a,1.15); scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff0d0,1.5); sun.position.set(40,90,25); scene.add(sun);
+const fill=new THREE.DirectionalLight(0x4fd0c0,.45); fill.position.set(-30,20,-40); scene.add(fill);
+const ambient=new THREE.AmbientLight(0x2a7f9a,.55); scene.add(ambient);
+
+// 玩家手持灯（潜水灯）
+const diveLight=new THREE.PointLight(0xbfe9f2,0.0,16,2); scene.add(diveLight);
+
+/* ---------- 水面 ---------- */
+const waterGeo=new THREE.PlaneGeometry(320,320,80,80);
+waterGeo.rotateX(-Math.PI/2);
+const waterMat=new THREE.ShaderMaterial({
+  transparent:true, side:THREE.DoubleSide, depthWrite:false,
+  uniforms:{uTime:{value:0},uA:{value:new THREE.Color(0x2fb6cf)},uB:{value:new THREE.Color(0xd8f6ff)}},
+  vertexShader:`uniform float uTime; varying vec3 vP; varying float vW;
+   void main(){ vec3 p=position;
+     float w=sin(p.x*.18+uTime*1.1)*.34+sin(p.z*.23-uTime*.85)*.30+sin((p.x+p.z)*.09+uTime*.6)*.22;
+     p.y+=w; vW=w; vP=p;
+     gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`,
+  fragmentShader:`uniform vec3 uA; uniform vec3 uB; uniform float uTime; varying vec3 vP; varying float vW;
+   void main(){ float f=smoothstep(-.5,.6,vW);
+     vec3 c=mix(uA,uB,f*.85);
+     float sp=sin(vP.x*1.6+uTime*2.2)*sin(vP.z*1.4-uTime*1.7);
+     c+=vec3(.35,.45,.4)*smoothstep(.86,1.,sp)*.5;
+     gl_FragColor=vec4(c, .58+f*.22);}`
+});
+const water=new THREE.Mesh(waterGeo,waterMat);
+water.position.set(W/2,SEA,D/2); scene.add(water);
+
+/* ---------- 光柱 ---------- */
+const shaftMat=new THREE.MeshBasicMaterial({color:0xbfeeff,transparent:true,opacity:.055,
+  blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+const shafts=new THREE.Group();
+for(let i=0;i<7;i++){
+  const g=new THREE.CylinderGeometry(1.2,7.5,SEA+8,10,1,true);
+  const m=new THREE.Mesh(g,shaftMat);
+  m.position.set(6+Math.random()*(W-12),(SEA+8)/2-2,6+Math.random()*(D-12));
+  m.rotation.z=(Math.random()-.5)*.22; m.userData.ph=Math.random()*7;
+  shafts.add(m);
+}
+scene.add(shafts);
+
+/* ---------- 浮游微粒 ---------- */
+const MOTE=900;
+const motePos=new Float32Array(MOTE*3);
+for(let i=0;i<MOTE;i++){motePos[i*3]=Math.random()*W;motePos[i*3+1]=Math.random()*SEA;motePos[i*3+2]=Math.random()*D}
+const moteGeo=new THREE.BufferGeometry();
+moteGeo.setAttribute('position',new THREE.BufferAttribute(motePos,3));
+const moteMat=new THREE.PointsMaterial({color:0xd8f6ff,size:.13,transparent:true,opacity:.55,
+  depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+const motes=new THREE.Points(moteGeo,moteMat); scene.add(motes);
+
+/* ============================================================
+   4. 区块网格构建（面剔除 + 顶点 AO）
+   ============================================================ */
+const AX=[[1,0,0],[0,1,0],[0,0,1]];
+const FACES=[];
+for(let a=0;a<3;a++)for(const s of [1,-1]){
+  const n=[0,0,0]; n[a]=s;
+  const U=AX[(a+1)%3], V=AX[(a+2)%3];
+  const sg=[[-1,-1],[1,-1],[1,1],[-1,1]];
+  const order = s>0? sg : sg.slice().reverse();
+  const corners=order.map(([su,sv])=>({
+    p:[.5+n[0]*.5+U[0]*su*.5+V[0]*sv*.5, .5+n[1]*.5+U[1]*su*.5+V[1]*sv*.5, .5+n[2]*.5+U[2]*su*.5+V[2]*sv*.5],
+    uv:[(su+1)/2,(sv+1)/2], su, sv
+  }));
+  FACES.push({n,U,V,corners,shade: a===1?(s>0?1.0:0.48):(a===0?0.80:0.66)});
+}
+const TSUV=1/GRID, EPS=0.5/(ATLAS);
+function tileUV(t,lu,lv){
+  const tx=t%GRID, ty=Math.floor(t/GRID);
+  const u0=tx*TSUV+EPS, u1=(tx+1)*TSUV-EPS;
+  const v1=1-ty*TSUV-EPS, v0=1-(ty+1)*TSUV+EPS;
+  return [u0+lu*(u1-u0), v0+lv*(v1-v0)];
+}
+function occ(x,y,z){ return isOpaque(getB(x,y,z))?1:0 }
+function vAO(s1,s2,c){ if(s1&&s2) return 0; return 3-(s1+s2+c) }
+const AOL=[0.52,0.68,0.84,1.0];
+
+const chunkMat=new THREE.MeshLambertMaterial({map:tex,vertexColors:true});
+const chunkMatT=new THREE.MeshLambertMaterial({map:tex,vertexColors:true,transparent:true,
+  opacity:.62,depthWrite:false,side:THREE.DoubleSide});
+const chunks=new Map();
+
+function buildChunk(cx,cz){
+  const key=cx+','+cz;
+  let rec=chunks.get(key);
+  if(rec){ scene.remove(rec.a); scene.remove(rec.t); rec.a.geometry.dispose(); rec.t.geometry.dispose(); }
+  const O={p:[],n:[],u:[],c:[],i:[]}, T={p:[],n:[],u:[],c:[],i:[]};
+  const x0=cx*CS, z0=cz*CS;
+  for(let x=x0;x<x0+CS;x++)for(let z=z0;z<z0+CS;z++)for(let y=0;y<H;y++){
+    const b=getB(x,y,z); if(b===0) continue;
+    const def=DEF[b]; if(!def) continue;
+    const trans=!!def.trans, plant=!!def.plant;
+    const tgt = (trans||plant)? T : O;
+    for(const F of FACES){
+      const nx=x+F.n[0], ny=y+F.n[1], nz=z+F.n[2];
+      const nb=getB(nx,ny,nz);
+      // —— 面剔除核心 ——
+      if(!trans && !plant){ if(isOpaque(nb)) continue; }
+      else { if(nb===b) continue; if(isOpaque(nb)) continue; if(trans && nb!==0 && DEF[nb] && DEF[nb].trans) continue; }
+      const tile = F.n[1]>0? def.t[0] : (F.n[1]<0? def.t[2] : def.t[1]);
+      const base=tgt.p.length/3;
+      const ao=[];
+      for(const c of F.corners){
+        tgt.p.push(x+c.p[0], y+c.p[1], z+c.p[2]);
+        tgt.n.push(F.n[0],F.n[1],F.n[2]);
+        const [uu,vv]=tileUV(tile,c.uv[0],c.uv[1]);
+        tgt.u.push(uu,vv);
+        let l=F.shade;
+        if(!plant){
+          const s1=occ(nx+F.U[0]*c.su, ny+F.U[1]*c.su, nz+F.U[2]*c.su);
+          const s2=occ(nx+F.V[0]*c.sv, ny+F.V[1]*c.sv, nz+F.V[2]*c.sv);
+          const cc=occ(nx+F.U[0]*c.su+F.V[0]*c.sv, ny+F.U[1]*c.su+F.V[1]*c.sv, nz+F.U[2]*c.su+F.V[2]*c.sv);
+          const a=vAO(s1,s2,cc); ao.push(a); l*=AOL[a];
+        } else ao.push(3);
+        // 自发光方块提亮
+        if(def.emis) l=Math.min(1.35,l*1.5);
+        const tint = def.emis? 1.18 : 1.0;
+        tgt.c.push(l*tint,l*tint,l*tint);
+      }
+      if(ao[0]+ao[2] > ao[1]+ao[3]) tgt.i.push(base,base+1,base+2, base,base+2,base+3);
+      else tgt.i.push(base+1,base+2,base+3, base+1,base+3,base);
+    }
+  }
+  const mk=(S,mat)=>{
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(S.p,3));
+    g.setAttribute('normal',new THREE.Float32BufferAttribute(S.n,3));
+    g.setAttribute('uv',new THREE.Float32BufferAttribute(S.u,2));
+    g.setAttribute('color',new THREE.Float32BufferAttribute(S.c,3));
+    g.setIndex(S.i); g.computeBoundingSphere();
+    const m=new THREE.Mesh(g,mat); m.frustumCulled=true; scene.add(m); return m;
+  };
+  rec={a:mk(O,chunkMat), t:mk(T,chunkMatT)};
+  chunks.set(key,rec);
+}
+function buildAllChunks(){ for(let cx=0;cx<CX;cx++)for(let cz=0;cz<CZ;cz++) buildChunk(cx,cz) }
+function dirtyAt(x,z){
+  const cx=Math.floor(x/CS), cz=Math.floor(z/CS);
+  const set=new Set([cx+','+cz]);
+  if(x%CS===0) set.add((cx-1)+','+cz);
+  if(x%CS===CS-1) set.add((cx+1)+','+cz);
+  if(z%CS===0) set.add(cx+','+(cz-1));
+  if(z%CS===CS-1) set.add(cx+','+(cz+1));
+  for(const k of set){const [a,b]=k.split(',').map(Number);
+    if(a>=0&&a<CX&&b>=0&&b<CZ) buildChunk(a,b)}
+}
+
+/* ---------- 选中方块高亮 ---------- */
+const hlGeo=new THREE.BoxGeometry(1.005,1.005,1.005);
+const hl=new THREE.LineSegments(new THREE.EdgesGeometry(hlGeo),
+  new THREE.LineBasicMaterial({color:0xf6ecd8,transparent:true,opacity:.85}));
+hl.visible=false; scene.add(hl);
+
+/* ============================================================
+   5. 玩家
+   ============================================================ */
+const player={
+  pos:new THREE.Vector3(PLAYER_SPAWN.x,PLAYER_SPAWN.y,PLAYER_SPAWN.z),
+  vel:new THREE.Vector3(),
+  yaw:0,pitch:0,
+  o2:100,hp:100,
+  inDome:false, inWater:true,
+  creative:false
+};
+const PW=0.32, PH=1.72, EYE=1.55;
+
+const keys={};
+addEventListener('keydown',e=>{
+  if(e.code==='Escape') return;
+  keys[e.code]=true;
+  if(dlgOpen){ if(e.code==='KeyE'||e.code==='Space'||e.code==='Enter') closeDlg(); return; }
+  if(e.code==='KeyE') tryInteract();
+  if(e.code==='KeyF'){ player.creative=!player.creative; toast(player.creative?'Creative mode: infinite blocks':'Survival mode: gather to build', player.creative?'gold':''); refreshHotbar(); }
+  if(e.code==='KeyT'){ palIdx=(palIdx+1)%PALETTES.length; buildAtlas(); toast('Texture style · '+PALETTES[palIdx].name,'gold'); }
+  if(e.code==='KeyH'){ toast('WASD swim · Space rise · Shift dive · Left mine · Right place · E talk','gold'); }
+  if(/^Digit[1-9]$/.test(e.code)){ sel=+e.code.slice(5)-1; refreshHotbar(); }
+});
+addEventListener('keyup',e=>keys[e.code]=false);
+
+const canvas=renderer.domElement;
+canvas.addEventListener('click',()=>{ if(!dlgOpen && !gateOpen) canvas.requestPointerLock(); });
+document.addEventListener('pointerlockchange',()=>{
+  const locked=document.pointerLockElement===canvas;
+  if(!locked && !gateOpen && !dlgOpen) openGate(true);
+});
+document.addEventListener('mousemove',e=>{
+  if(document.pointerLockElement!==canvas) return;
+  player.yaw-=e.movementX*0.0022;
+  player.pitch-=e.movementY*0.0022;
+  player.pitch=Math.max(-1.55,Math.min(1.55,player.pitch));
+});
+let mining=false;
+canvas.addEventListener('mousedown',e=>{
+  if(document.pointerLockElement!==canvas) return;
+  if(e.button===0) mining=true;
+  if(e.button===2) placeBlock();
+});
+addEventListener('mouseup',e=>{ if(e.button===0){mining=false; mineProg=0; setRing(0)} });
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+addEventListener('wheel',e=>{
+  if(document.pointerLockElement!==canvas) return;
+  sel=(sel+(e.deltaY>0?1:-1)+9)%9; refreshHotbar();
+},{passive:true});
+
+function collides(px,py,pz){
+  const x0=Math.floor(px-PW),x1=Math.floor(px+PW);
+  const y0=Math.floor(py),y1=Math.floor(py+PH);
+  const z0=Math.floor(pz-PW),z1=Math.floor(pz+PW);
+  for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++)for(let z=z0;z<=z1;z++)
+    if(isSolid(getB(x,y,z))) return true;
+  return false;
+}
+function moveAxis(axis,amt){
+  const p=player.pos.clone(); p[axis]+=amt;
+  if(!collides(p.x,p.y,p.z)){ player.pos[axis]+=amt; return false }
+  // 自动上台阶（仅地面）
+  if(axis!=='y'){
+    const q=player.pos.clone(); q[axis]+=amt; q.y+=1.02;
+    if(!collides(q.x,q.y,q.z)){ player.pos[axis]+=amt; player.pos.y+=1.02; return false }
+  }
+  player.vel[axis]=0; return true;
+}
+
+/* ---------- 体素射线（Amanatides-Woo） ---------- */
+function raycastVoxel(origin,dir,maxD=6.5){
+  let x=Math.floor(origin.x),y=Math.floor(origin.y),z=Math.floor(origin.z);
+  const sx=Math.sign(dir.x)||1, sy=Math.sign(dir.y)||1, sz=Math.sign(dir.z)||1;
+  const dx=Math.abs(1/(dir.x||1e-9)),dy=Math.abs(1/(dir.y||1e-9)),dz=Math.abs(1/(dir.z||1e-9));
+  let tx=((sx>0? x+1-origin.x : origin.x-x))*dx;
+  let ty=((sy>0? y+1-origin.y : origin.y-y))*dy;
+  let tz=((sz>0? z+1-origin.z : origin.z-z))*dz;
+  let nx=0,ny=0,nz=0,t=0;
+  while(t<maxD){
+    const b=getB(x,y,z);
+    if(b!==0 && !(DEF[b]&&DEF[b].plant && false)) return {x,y,z,b,nx,ny,nz};
+    if(tx<ty&&tx<tz){x+=sx;t=tx;tx+=dx;nx=-sx;ny=0;nz=0}
+    else if(ty<tz){y+=sy;t=ty;ty+=dy;nx=0;ny=-sy;nz=0}
+    else {z+=sz;t=tz;tz+=dz;nx=0;ny=0;nz=-sz}
+  }
+  return null;
+}
+
+/* ============================================================
+   6. 物品栏 / 背包
+   ============================================================ */
+const HOT=[B.SAND,B.PLANK,B.GLASS,B.LAMP,B.GOLD,B.CORAL_P,B.KELP,B.SEED,B.FARM];
+let sel=0;
+const inv={};
+inv[B.SAND]=32; inv[B.PLANK]=24; inv[B.GLASS]=32; inv[B.LAMP]=8; inv[B.GOLD]=4;
+inv[B.CORAL_P]=6; inv[B.KELP]=6; inv[B.SEED]=12; inv[B.FARM]=4;
+let pearls=3;
+
+const hotbarEl=document.getElementById('hotbar');
+const iconCache={};
+function blockIcon(b){
+  if(iconCache[b]) return iconCache[b];
+  const t=DEF[b].t[0];
+  const c=document.createElement('canvas'); c.width=c.height=TS;
+  const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  g.drawImage(atlasCanvas,(t%GRID)*TS,Math.floor(t/GRID)*TS,TS,TS,0,0,TS,TS);
+  return iconCache[b]=c.toDataURL();
+}
+function buildHotbarIcons(){ for(const k in iconCache) delete iconCache[k]; refreshHotbar(); }
+function refreshHotbar(){
+  hotbarEl.innerHTML='';
+  HOT.forEach((b,i)=>{
+    const n = player.creative? '∞' : (inv[b]||0);
+    const el=document.createElement('button');
+    el.className='slot'+(i===sel?' sel':'')+((!player.creative&&!inv[b])?' empty':'');
+    el.setAttribute('aria-label',DEF[b].n+' qty '+n);
+    el.innerHTML=`<span class="k">${i+1}</span><img src="${blockIcon(b)}" alt=""><span class="n">${DEF[b].n} ${n}</span>`;
+    el.onclick=()=>{sel=i;refreshHotbar();canvas.requestPointerLock()};
+    hotbarEl.appendChild(el);
+  });
+  document.getElementById('sPearl').textContent=pearls;
+}
+
+/* ---------- 挖 / 放 ---------- */
+let mineProg=0, mineTarget=null;
+const ringEl=document.getElementById('crossRing');
+function setRing(p){ ringEl.style.strokeDashoffset = (56.5*(1-p)).toFixed(1) }
+
+function doMine(dt){
+  const dir=camDir();
+  const eye=eyePos();
+  const hit=raycastVoxel(eye,dir);
+  if(!hit){ mineProg=0; setRing(0); mineTarget=null; return }
+  const k=hit.x+','+hit.y+','+hit.z;
+  if(mineTarget!==k){ mineTarget=k; mineProg=0 }
+  const def=DEF[hit.b];
+  mineProg+=dt/(def.hard||.5);
+  setRing(Math.min(1,mineProg));
+  if(mineProg>=1){
+    mineProg=0; setRing(0);
+    setB(hit.x,hit.y,hit.z,B.AIR);
+    dirtyAt(hit.x,hit.z);
+    const drop=def.drop;
+    if(drop==='pearl'){ pearls++; toast('Picked up Pearl ×1','gold') }
+    else if(drop){ inv[drop]=(inv[drop]||0)+1 }
+    if(hit.b===B.SEED) plants=plants.filter(p=>!(p.x===hit.x&&p.y===hit.y&&p.z===hit.z));
+    refreshHotbar();
+    spawnBurst(hit.x+.5,hit.y+.5,hit.z+.5, hit.b);
+  }
+}
+function placeBlock(){
+  const dir=camDir(), eye=eyePos();
+  const hit=raycastVoxel(eye,dir);
+  if(!hit) return;
+  const b=HOT[sel];
+  if(!player.creative && !(inv[b]>0)){ toast('Not enough "'+DEF[b].n+'"','warn'); return }
+  const x=hit.x+hit.nx, y=hit.y+hit.ny, z=hit.z+hit.nz;
+  if(!inB(x,y,z) || getB(x,y,z)!==0) return;
+  // 不能放在自己身上
+  const p=player.pos;
+  if(x===Math.floor(p.x)&&z===Math.floor(p.z)&&(y===Math.floor(p.y)||y===Math.floor(p.y+1))) return;
+  setB(x,y,z,b); dirtyAt(x,z);
+  if(!player.creative){ inv[b]--; refreshHotbar() }
+  if(b===B.SEED) plants.push({x,y,z,t:0});
+  spawnBurst(x+.5,y+.5,z+.5,b);
+}
+
+/* ---------- 粒子爆裂 ---------- */
+const bursts=[];
+const burstGeo=new THREE.BoxGeometry(.16,.16,.16);
+function spawnBurst(x,y,z,b){
+  const col = b===B.CORAL_P?0xff9fb0 : b===B.CORAL_O?0xffa860 : b===B.CORAL_V?0xc39bf0 :
+              b===B.KELP?0x5fc48c : b===B.GOLD?0xf7d27a : b===B.LAMP?0xffe9a8 : 0xd8c48e;
+  const mat=new THREE.MeshLambertMaterial({color:col,transparent:true,opacity:.95});
+  for(let i=0;i<7;i++){
+    const m=new THREE.Mesh(burstGeo,mat.clone());
+    m.position.set(x,y,z);
+    m.userData.v=new THREE.Vector3((Math.random()-.5)*2.4,Math.random()*2.4,(Math.random()-.5)*2.4);
+    m.userData.life=0.9; scene.add(m); bursts.push(m);
+  }
+}
+
+/* ============================================================
+   7. 生物
+   ============================================================ */
+const creatures=[];
+const M=(c,e=0)=> new THREE.MeshLambertMaterial({color:c,emissive:e,emissiveIntensity:e?1.4:0});
+function box(w,h,d,c,x,y,z,e){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c,e));
+  m.position.set(x,y,z); return m;
+}
+function avoidTerrain(obj,dir){
+  const p=obj.position;
+  const ax=Math.floor(p.x+dir.x*1.6), az=Math.floor(p.z+dir.z*1.6);
+  const ay=Math.floor(p.y+dir.y*1.6);
+  if(isSolid(getB(ax,ay,az))) return true;
+  if(p.y<3||p.y>SEA-1) return true;
+  return false;
+}
+
+/* --- 美人鱼 --- */
+function makeMermaid(hue){
+  const g=new THREE.Group();
+  const skin=0xf3d9c4, tail=hue;
+  g.add(box(.52,.62,.36,skin,0,.55,0));
+  const head=box(.46,.44,.42,skin,0,1.06,0); g.add(head);
+  g.add(box(.5,.2,.46,0x6b4a3a,0,1.28,0));           // 头发
+  g.add(box(.14,.5,.14,skin,-.34,.55,0));
+  g.add(box(.14,.5,.14,skin,.34,.55,0));
+  const seg=[];
+  let parent=g;
+  for(let i=0;i<4;i++){
+    const s=new THREE.Group(); s.position.y = i===0? .18 : -.34;
+    const m=box(.42-i*.07,.36,.3-i*.05, i%2?tail:0xffffff, 0,-.18,0);
+    s.add(m); parent.add(s); parent=s; seg.push(s);
+  }
+  const fin=box(.62,.1,.5,tail,0,-.36,0); parent.add(fin);
+  g.userData={seg,fin,ph:Math.random()*7,type:'mermaid',name:'Lian'};
+  scene.add(g); creatures.push(g); return g;
+}
+/* --- 章鱼 --- */
+function makeOctopus(){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.SphereGeometry(.62,14,12),M(0xe07a9a));
+  body.scale.set(1,.86,1); body.position.y=.5; g.add(body);
+  const eyeM=M(0xffffff), pup=M(0x201018);
+  for(const s of [-1,1]){
+    const e=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),eyeM); e.position.set(.26*s,.62,.5); g.add(e);
+    const p=new THREE.Mesh(new THREE.SphereGeometry(.08,8,6),pup); p.position.set(.28*s,.62,.62); g.add(p);
+  }
+  const tents=[];
+  for(let i=0;i<7;i++){
+    const t=new THREE.Group();
+    const a=i/7*Math.PI*2;
+    t.position.set(Math.cos(a)*.42,.22,Math.sin(a)*.42);
+    const m=box(.16,.62,.16,0xd06a8c,0,-.3,0);
+    t.add(m); t.rotation.z=Math.cos(a)*.4; t.rotation.x=Math.sin(a)*.4;
+    g.add(t); tents.push({t,a});
+  }
+  g.userData={tents,ph:Math.random()*7,type:'octopus',name:'Inkpot'};
+  scene.add(g); creatures.push(g); return g;
+}
+/* --- 水母 --- */
+function makeJelly(col){
+  const g=new THREE.Group();
+  const bellMat=new THREE.MeshLambertMaterial({color:col,transparent:true,opacity:.55,
+    emissive:col,emissiveIntensity:.9,side:THREE.DoubleSide});
+  const bell=new THREE.Mesh(new THREE.SphereGeometry(.55,16,12,0,Math.PI*2,0,Math.PI*.62),bellMat);
+  g.add(bell);
+  const core=new THREE.Mesh(new THREE.SphereGeometry(.2,10,8),
+    new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.8}));
+  core.position.y=.1; g.add(core);
+  const ts=[];
+  for(let i=0;i<9;i++){
+    const a=i/9*Math.PI*2;
+    const t=new THREE.Mesh(new THREE.CylinderGeometry(.035,.012,1.1,5),
+      new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.5}));
+    t.position.set(Math.cos(a)*.34,-.62,Math.sin(a)*.34);
+    g.add(t); ts.push(t);
+  }
+  g.userData={ts,ph:Math.random()*7,type:'jelly',name:'Lumitide',bell};
+  scene.add(g); creatures.push(g); return g;
+}
+/* --- 小丑鱼群 --- */
+function makeFish(col,stripe){
+  const g=new THREE.Group();
+  g.add(box(.5,.26,.18,col,0,0,0));
+  g.add(box(.1,.24,.2,stripe,.06,0,0));
+  g.add(box(.1,.2,.16,stripe,-.14,0,0));
+  const tail=box(.06,.22,.24,col,-.3,0,0); g.add(tail);
+  const fin=box(.14,.12,.06,stripe,0,.16,0); g.add(fin);
+  g.userData={type:'fish',name:'Coral Clownfish',ph:Math.random()*7,dir:new THREE.Vector3(Math.random()-.5,0,Math.random()-.5).normalize(),
+    tail, speed:1.6+Math.random()*1.4};
+  scene.add(g); creatures.push(g); return g;
+}
+
+function spawnCreatures(){
+  makeMermaid(0x3fb8c9); makeMermaid(0xf5c451);
+  makeOctopus(); makeOctopus();
+  makeJelly(0xff9fd0); makeJelly(0x9fd8ff); makeJelly(0xc8b0ff);
+  for(let i=0;i<14;i++) makeFish(0xff8a3d,0xfff4e6);
+  for(const c of creatures){
+    const x=6+Math.random()*(W-12), z=6+Math.random()*(D-12);
+    const h=heightMap[(z|0)*W+(x|0)];
+    c.position.set(x, Math.min(SEA-2, h+2+Math.random()*10), z);
+    if(c.userData.type==='octopus') c.position.y=h+1;
+  }
+}
+
+/* ============================================================
+   8. 村民
+   ============================================================ */
+const villagers=[];
+function makeVillager(name,role,x,z,color,lines,trade){
+  const g=new THREE.Group();
+  const skin=0xf0d3bb;
+  g.add(box(.62,.78,.42,color,0,.86,0));                 // 身体
+  g.add(box(.5,.46,.46,skin,0,1.5,0));                   // 头
+  g.add(box(.56,.18,.5,0x8a5a44,0,1.74,0));              // 头发
+  g.add(box(.16,.62,.16,skin,-.4,.9,0));
+  g.add(box(.16,.62,.16,skin,.4,.9,0));
+  const tail=new THREE.Group(); tail.position.y=.46;
+  const t1=box(.34,.5,.26,0x3fb8c9,0,-.24,0); tail.add(t1);
+  const t2=box(.5,.1,.4,0x2f97ab,0,-.55,0); tail.add(t2);
+  g.add(tail);
+  g.userData={type:'villager',name,role,lines,trade,ph:Math.random()*7,tail,home:new THREE.Vector3(x,0,z)};
+  const h=heightMap[z*W+x]; g.position.set(x,h+1,z);
+  scene.add(g); villagers.push(g); return g;
+}
+
+/* ============================================================
+   9. 农业
+   ============================================================ */
+let plants=[];
+function tickPlants(dt){
+  for(const p of plants){
+    if(getB(p.x,p.y,p.z)!==B.SEED){ p.dead=true; continue }
+    p.t+=dt;
+    if(p.t>6){
+      p.t=0;
+      let h=0; while(getB(p.x,p.y+h,p.z)!==0 && h<8) h++;
+      if(h<5 && Math.random()<.75 && getB(p.x,p.y-1,p.z)!==0){
+        setB(p.x,p.y+h,p.z,B.KELP); dirtyAt(p.x,p.z);
+      }
+    }
+  }
+  plants=plants.filter(p=>!p.dead);
+}
+
+/* ============================================================
+   10. 气密检测（洪泛填充）
+   ============================================================ */
+let domeTimer=0;
+function computeDome(){
+  const x=Math.floor(player.pos.x), y=Math.floor(player.pos.y+0.9), z=Math.floor(player.pos.z);
+  if(!inB(x,y,z)||getB(x,y,z)!==0) return false;
+  const seen=new Set([x+','+y+','+z]);
+  const q=[[x,y,z]]; let n=0;
+  while(q.length){
+    const [a,b,c]=q.pop(); n++;
+    if(n>2600) return false;
+    if(a<=0||a>=W-1||c<=0||c>=D-1||b>=H-1||b<0) return false;
+    if(b>=SEA) return false;                 // 与海面连通 → 开放水域
+    const N=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+    for(const [dx,dy,dz] of N){
+      const nx=a+dx,ny=b+dy,nz=c+dz,k=nx+','+ny+','+nz;
+      if(seen.has(k)) continue;
+      if(getB(nx,ny,nz)!==0) continue;       // 玻璃/固体阻挡
+      seen.add(k); q.push([nx,ny,nz]);
+    }
+  }
+  return true;
+}
+
+/* ============================================================
+   11. HUD 逻辑
+   ============================================================ */
+const $=id=>document.getElementById(id);
+function toast(msg,cls=''){
+  const el=document.createElement('div'); el.className='toast '+cls; el.textContent=msg;
+  $('toasts').appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .4s,transform .4s';el.style.opacity='0';el.style.transform='translateX(20px)';
+    setTimeout(()=>el.remove(),420)},2600);
+  while($('toasts').children.length>4) $('toasts').firstChild.remove();
+}
+let promptTimer=0;
+function setPrompt(html){
+  const el=$('prompt');
+  if(html){ el.innerHTML=html; el.classList.add('show') } else el.classList.remove('show');
+}
+
+/* ---------- 对话 ---------- */
+let dlgOpen=false, curV=null, typeTimer=null;
+function openDlg(v){
+  dlgOpen=true; curV=v; document.exitPointerLock();
+  $('dlg').classList.add('on');
+  $('dlgName').textContent=v.userData.name;
+  $('dlgRole').textContent=v.userData.role;
+  $('dlgAv').textContent=v.userData.emoji||'🧜';
+  const line=v.userData.lines[Math.floor(Math.random()*v.userData.lines.length)];
+  typeText(line);
+  renderActs(v);
+  setTimeout(()=>$('dlgActs').querySelector('button')?.focus(),60);
+}
+function typeText(s){
+  const el=$('dlgText'); clearInterval(typeTimer); el.textContent='';
+  let i=0;
+  typeTimer=setInterval(()=>{
+    el.innerHTML=s.slice(0,i++)+'<span class="cur">▌</span>';
+    if(i>s.length){clearInterval(typeTimer);el.textContent=s}
+  },18);
+}
+function renderActs(v){
+  const acts=$('dlgActs'); acts.innerHTML='';
+  const tr=v.userData.trade;
+  if(tr){
+    const b=document.createElement('button');
+    b.className='btn gold';
+    b.textContent=`${tr.label}（Pearls ${pearls}/${tr.cost}）`;
+    b.disabled=pearls<tr.cost;
+    b.onclick=()=>{
+      if(pearls<tr.cost) return;
+      pearls-=tr.cost; inv[tr.give]=(inv[tr.give]||0)+tr.amount;
+      toast(`Trade complete: ${DEF[tr.give].n} ×${tr.amount}`,'gold');
+      $('sPearl').textContent=pearls; refreshHotbar();
+      typeText(tr.reply); renderActs(v);
+    };
+    acts.appendChild(b);
+  }
+  const c=document.createElement('button'); c.className='btn pri'; c.textContent='Keep chatting';
+  c.onclick=()=>{ typeText(v.userData.lines[Math.floor(Math.random()*v.userData.lines.length)]); renderActs(v) };
+  acts.appendChild(c);
+  const x=document.createElement('button'); x.className='btn'; x.textContent='Leave (Esc)';
+  x.onclick=closeDlg; acts.appendChild(x);
+}
+function closeDlg(){ dlgOpen=false; clearInterval(typeTimer); $('dlg').classList.remove('on'); curV=null; canvas.requestPointerLock() }
+function tryInteract(){
+  const eye=eyePos(), dir=camDir();
+  let best=null,bd=1e9;
+  for(const v of villagers){
+    const d=v.position.distanceTo(eye);
+    if(d>4.2) continue;
+    const to=v.position.clone().sub(eye).normalize();
+    if(to.dot(dir)<0.55) continue;
+    if(d<bd){bd=d;best=v}
+  }
+  if(best) openDlg(best);
+}
+
+/* ---------- 开场 / 暂停 ---------- */
+let gateOpen=true;
+function openGate(paused){
+  gateOpen=true;
+  $('gate').classList.remove('off');
+  $('play').textContent = paused? 'RESUME DIVING' : 'DIVE INTO THE LAGOON';
+  $('loadNote').textContent = paused? 'Paused · press Esc or click to resume' : 'World ready · clicking start will lock the mouse';
+}
+function closeGate(){ gateOpen=false; $('gate').classList.add('off'); canvas.requestPointerLock() }
+$('play').onclick=closeGate;
+
+/* ============================================================
+   12. 主循环
+   ============================================================ */
+function eyePos(){ return new THREE.Vector3(player.pos.x, player.pos.y+EYE, player.pos.z) }
+function camDir(){
+  return new THREE.Vector3(
+    Math.sin(player.yaw)*Math.cos(player.pitch),
+    Math.sin(player.pitch),
+    Math.cos(player.yaw)*Math.cos(player.pitch)
+  ).normalize();
+}
+
+const clock=new THREE.Clock();
+let fpsAcc=0,fpsN=0,fpsT=0;
+const current=new THREE.Vector3();
+const tmpV=new THREE.Vector3();
+
+function update(dt,t){
+  /* --- 动态水流 --- */
+  const ca=t*0.11;
+  current.set(Math.sin(ca)*0.9+Math.sin(ca*2.3)*0.35, Math.sin(ca*1.7)*0.16, Math.cos(ca*0.8)*0.9);
+  const flowDeg=((Math.atan2(current.x,current.z)*180/Math.PI)+360)%360;
+  const flowSpd=current.length();
+
+  /* --- 玩家 --- */
+  const eye=eyePos();
+  const headBlock=getB(Math.floor(eye.x),Math.floor(eye.y),Math.floor(eye.z));
+  const feetBlock=getB(Math.floor(player.pos.x),Math.floor(player.pos.y+.2),Math.floor(player.pos.z));
+  const inWater = (headBlock===0||feetBlock===0) && eye.y<SEA && !player.inDome;
+
+  // 输入方向
+  const fwd=new THREE.Vector3(Math.sin(player.yaw),0,Math.cos(player.yaw));
+  const right=new THREE.Vector3(fwd.z,0,-fwd.x);
+  const wish=new THREE.Vector3();
+  if(keys['KeyW']) wish.add(fwd);
+  if(keys['KeyS']) wish.sub(fwd);
+  if(keys['KeyD']) wish.sub(right);
+  if(keys['KeyA']) wish.add(right);
+  if(wish.lengthSq()>0) wish.normalize();
+
+  const accel = inWater? 22 : (player.inDome? 34 : 12);
+  player.vel.x+=wish.x*accel*dt;
+  player.vel.z+=wish.z*accel*dt;
+
+  if(inWater){
+    player.vel.y += (-3.2 + (keys['Space']?7.5:0) - (keys['ShiftLeft']||keys['ShiftRight']?7.0:0))*dt;
+    player.vel.y += current.y*dt*1.2;
+    player.vel.multiplyScalar(Math.pow(0.06,dt));       // 水阻
+    // 水流推动
+    player.vel.x += current.x*dt*1.5;
+    player.vel.z += current.z*dt*1.5;
+    player.vel.y += Math.sin(t*1.6)*0.25*dt;             // 浮沉起伏
+  } else {
+    player.vel.y -= (player.inDome? 22:9)*dt;
+    if(keys['Space'] && player.inDome) player.vel.y=7.2;
+    player.vel.x*=Math.pow(0.0009,dt);
+    player.vel.z*=Math.pow(0.0009,dt);
+  }
+  const maxS = inWater? 6.2 : (player.inDome?5.6:9);
+  const hs=Math.hypot(player.vel.x,player.vel.z);
+  if(hs>maxS){ player.vel.x*=maxS/hs; player.vel.z*=maxS/hs }
+
+  moveAxis('x',player.vel.x*dt);
+  moveAxis('z',player.vel.z*dt);
+  moveAxis('y',player.vel.y*dt);
+  player.pos.x=Math.max(1,Math.min(W-1,player.pos.x));
+  player.pos.z=Math.max(1,Math.min(D-1,player.pos.z));
+  if(player.pos.y<1){player.pos.y=1;player.vel.y=0}
+
+  /* --- 氧气 / 生命 --- */
+  domeTimer-=dt;
+  if(domeTimer<=0){ domeTimer=0.35; player.inDome=computeDome() }
+  if(inWater){
+    player.o2-=dt*0.4;
+    if(player.o2<0){ player.o2=0; player.hp-=dt*2 }
+  } else {
+    player.o2=Math.min(100,player.o2+dt*26);
+    if(player.o2>55) player.hp=Math.min(100,player.hp+dt*3.2);
+  }
+  if(player.hp<=0){
+    player.hp=60; player.o2=100;
+    player.pos.set(PLAYER_SPAWN.x,PLAYER_SPAWN.y,PLAYER_SPAWN.z); player.vel.set(0,0,0);
+    toast('The current swept you back to the dome…','warn');
+  }
+
+  /* --- 相机 --- */
+  camera.position.copy(eye);
+  if(inWater) camera.position.y += Math.sin(t*1.4)*0.045;
+  const d=camDir();
+  camera.lookAt(eye.x+d.x, eye.y+d.y, eye.z+d.z);
+
+  // 雾 & 光照随介质变化
+  const targetFog = inWater? 0.036 : 0.012;
+  scene.fog.density += (targetFog-scene.fog.density)*Math.min(1,dt*4);
+  const fc = inWater? FOG_WATER : FOG_AIR;
+  scene.fog.color.lerp(fc,Math.min(1,dt*4));
+  scene.background.lerp(fc,Math.min(1,dt*4));
+  diveLight.intensity += ((inWater?1.5:0.35)-diveLight.intensity)*Math.min(1,dt*3);
+  diveLight.position.copy(eye);
+  $('tint').style.opacity = inWater? 1 : .35;
+
+  /* --- 选中方块 --- */
+  const hit=raycastVoxel(eye,d);
+  if(hit){ hl.visible=true; hl.position.set(hit.x+.5,hit.y+.5,hit.z+.5);
+    const def=DEF[hit.b];
+    $('target').style.opacity=1;
+    $('target').textContent=def? def.n : '';
+  } else { hl.visible=false; $('target').style.opacity=0 }
+
+  if(mining && !dlgOpen) doMine(dt); else { setRing(0) }
+
+  /* --- 村民交互提示 --- */
+  let near=null,nd=1e9;
+  for(const v of villagers){
+    const dd=v.position.distanceTo(eye);
+    if(dd<4.2){ const to=v.position.clone().sub(eye).normalize();
+      if(to.dot(d)>0.55 && dd<nd){nd=dd;near=v} }
+  }
+  if(near && !dlgOpen) setPrompt(`<kbd>E</k> Talk with ${near.userData.name}`);
+  else setPrompt('');
+
+  /* --- 生物 --- */
+  for(const c of creatures){
+    const u=c.userData; u.ph+=dt;
+    if(u.type==='mermaid'){
+      const r=9+Math.sin(u.ph*.3)*3;
+      const cx=u.home? u.home.x : 32, cz=u.home? u.home.z : 32;
+      const nx=cx+Math.cos(u.ph*.35)*r, nz=cz+Math.sin(u.ph*.35)*r;
+      const ny=Math.min(SEA-2.5, heightMap[(nz|0)*W+(nx|0)]+5+Math.sin(u.ph*.6)*2.2);
+      tmpV.set(nx-c.position.x, ny-c.position.y, nz-c.position.z);
+      const dist=tmpV.length();
+      if(dist>0.01){
+        tmpV.normalize();
+        if(!avoidTerrain(c,tmpV)) c.position.addScaledVector(tmpV, Math.min(2.4*dt,dist));
+        c.rotation.y=Math.atan2(tmpV.x,tmpV.z);
+      }
+      u.seg.forEach((s,i)=>{ s.rotation.z=Math.sin(u.ph*3.2-i*.7)*.42; s.rotation.x=Math.cos(u.ph*2.4-i*.5)*.18 });
+      u.fin.rotation.x=Math.sin(u.ph*3.2)*.5;
+      c.position.y+=Math.sin(u.ph*1.3)*.006;
+    }
+    else if(u.type==='octopus'){
+      c.position.y = heightMap[(c.position.z|0)*W+(c.position.x|0)]+1.05+Math.sin(u.ph*.8)*.12;
+      u.tents.forEach(o=>{ o.t.rotation.x=Math.sin(o.a)*.4+Math.sin(u.ph*2+o.a*2)*.3;
+                           o.t.rotation.z=Math.cos(o.a)*.4+Math.cos(u.ph*1.7+o.a)*.3 });
+      c.rotation.y+=Math.sin(u.ph*.4)*dt*.4;
+    }
+    else if(u.type==='jelly'){
+      const pulse=Math.sin(u.ph*1.9);
+      u.bell.scale.set(1+pulse*.16, 1-pulse*.2, 1+pulse*.16);
+      u.ts.forEach((tt,i)=>{ tt.position.x=Math.cos(i/9*6.283)*(.34+pulse*.1);
+                             tt.position.z=Math.sin(i/9*6.283)*(.34+pulse*.1);
+                             tt.scale.y=1+pulse*.25 });
+      c.position.y += (0.55+pulse*0.5)*dt;
+      c.position.x += current.x*dt*.7; c.position.z += current.z*dt*.7;
+      const gy=heightMap[(c.position.z|0)*W+(c.position.x|0)]+3;
+      if(c.position.y>SEA-3||c.position.y<gy){
+        u.ph+=Math.PI; c.position.y=THREE.MathUtils.clamp(c.position.y,gy,SEA-3);
+      }
+      if(c.position.x<3||c.position.x>W-3) c.position.x=W-c.position.x;
+      if(c.position.z<3||c.position.z>D-3) c.position.z=D-c.position.z;
+    }
+    else if(u.type==='fish'){
+      const sp=u.speed;
+      tmpV.copy(u.dir);
+      if(avoidTerrain(c,tmpV) || Math.random()<dt*0.35){
+        u.dir.set(Math.random()-.5,(Math.random()-.5)*.3,Math.random()-.5).normalize();
+      }
+      tmpV.copy(u.dir);
+      c.position.addScaledVector(tmpV,sp*dt);
+      c.position.y += Math.sin(u.ph*4)*dt*.5;
+      c.rotation.y=Math.atan2(tmpV.x,tmpV.z);
+      c.rotation.z=-tmpV.y*.6;
+      u.tail.rotation.y=Math.sin(u.ph*12)*.6;
+      if(c.position.x<2||c.position.x>W-2) u.dir.x*=-1;
+      if(c.position.z<2||c.position.z>D-2) u.dir.z*=-1;
+      const gy=heightMap[(c.position.z|0)*W+(c.position.x|0)]+1.2;
+      if(c.position.y<gy){c.position.y=gy;u.dir.y=Math.abs(u.dir.y)}
+      if(c.position.y>SEA-1.5){c.position.y=SEA-1.5;u.dir.y=-Math.abs(u.dir.y)}
+    }
+  }
+
+  /* --- 村民 --- */
+  for(const v of villagers){
+    const u=v.userData; u.ph+=dt;
+    u.tail.rotation.z=Math.sin(u.ph*1.6)*.25;
+    v.position.y = heightMap[(v.position.z|0)*W+(v.position.x|0)]+1+Math.sin(u.ph*1.1)*.07;
+    const dv=tmpV.copy(eye).sub(v.position);
+    if(dv.length()<9){ v.rotation.y=Math.atan2(dv.x,dv.z) }
+    else v.rotation.y=Math.sin(u.ph*.3)*.8;
+  }
+
+  /* --- 粒子 --- */
+  tickPlants(dt);
+  for(let i=bursts.length-1;i>=0;i--){
+    const b=bursts[i]; b.userData.life-=dt;
+    b.userData.v.y-=6*dt; b.userData.v.multiplyScalar(Math.pow(.2,dt));
+    b.position.addScaledVector(b.userData.v,dt);
+    b.material.opacity=Math.max(0,b.userData.life);
+    b.rotation.x+=dt*4; b.rotation.y+=dt*3;
+    if(b.userData.life<=0){ scene.remove(b); b.material.dispose(); bursts.splice(i,1) }
+  }
+  // 浮游微粒随水流漂移
+  const pa=moteGeo.attributes.position.array;
+  for(let i=0;i<MOTE;i++){
+    pa[i*3]  += current.x*dt*.55 + Math.sin(t*.7+i)*dt*.12;
+    pa[i*3+1]+= Math.sin(t*.5+i*.3)*dt*.22;
+    pa[i*3+2]+= current.z*dt*.55 + Math.cos(t*.6+i)*dt*.12;
+    const dx=pa[i*3]-player.pos.x, dz=pa[i*3+2]-player.pos.z;
+    if(dx>26) pa[i*3]-=52; if(dx<-26) pa[i*3]+=52;
+    if(dz>26) pa[i*3+2]-=52; if(dz<-26) pa[i*3+2]+=52;
+    if(pa[i*3+1]>SEA) pa[i*3+1]=2; if(pa[i*3+1]<1) pa[i*3+1]=SEA-1;
+  }
+  moteGeo.attributes.position.needsUpdate=true;
+
+  /* --- 环境动画 --- */
+  waterMat.uniforms.uTime.value=t;
+  water.position.x=player.pos.x; water.position.z=player.pos.z;
+  shafts.children.forEach(s=>{ s.rotation.y=t*.05+s.userData.ph;
+    s.position.x += Math.sin(t*.2+s.userData.ph)*dt*.4 });
+  sun.intensity=1.45+Math.sin(t*.35)*0.12;
+
+  /* --- HUD --- */
+  fpsAcc+=1/Math.max(dt,1e-4); fpsN++; fpsT+=dt;
+  if(fpsT>0.4){
+    $('sFps').textContent=Math.round(fpsAcc/fpsN);
+    fpsAcc=0;fpsN=0;fpsT=0;
+    $('sDepth').textContent=Math.max(0,Math.round(SEA-eye.y))+' m';
+    $('sFlow').textContent=Math.round(flowSpd*100)+' % · '+Math.round(flowDeg)+'°';
+  }
+  $('o2').firstElementChild.style.width=player.o2+'%';
+  $('hp').firstElementChild.style.width=player.hp+'%';
+  $('o2n').textContent=Math.round(player.o2)+'%';
+  $('hpn').textContent=Math.round(player.hp)+'%';
+  $('o2').classList.toggle('low',player.o2<30);
+  $('hp').classList.toggle('low',player.hp<35);
+  const air=$('sAir');
+  if(player.inDome){ air.className='chip ok'; air.innerHTML='<i class="dot"></i>Dome Air ✓' }
+  else if(!inWater){ air.className='chip ok'; air.innerHTML='<i class="dot"></i>Above Surface' }
+  else { air.className='chip bad'; air.innerHTML='<i class="dot"></i>Open Water' }
+}
+
+let last=performance.now();
+function loop(){
+  requestAnimationFrame(loop);
+  const now=performance.now();
+  let dt=(now-last)/1000; last=now;
+  dt=Math.min(dt,0.05);
+  const t=clock.getElapsedTime();
+  if(!gateOpen || true) update(dt,t);
+  composer.render();
+}
+
+/* ============================================================
+   13. 后期处理
+   ============================================================ */
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.62,0.72,0.82);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+  composer.setSize(innerWidth,innerHeight);
+  bloom.setSize(innerWidth,innerHeight);
+});
+addEventListener('beforeunload',()=>{
+  chunks.forEach(r=>{r.a.geometry.dispose();r.t.geometry.dispose()});
+  chunkMat.dispose(); chunkMatT.dispose(); tex.dispose(); renderer.dispose();
+});
+
+/* ============================================================
+   14. 启动
+   ============================================================ */
+buildAtlas();
+generate();
+preparePlayerSpawn();
+player.pos.set(PLAYER_SPAWN.x,PLAYER_SPAWN.y,PLAYER_SPAWN.z);
+buildAllChunks();
+spawnCreatures();
+
+makeVillager('Xi','Dome Keeper', 28,29, 0x2f97ab,'🧜',
+ ['The dome\'s sealant is ground from mother-of-pearl — it holds for years. If you spot a crack in the glass, pin it down with a coral lamp against the water pressure first.',
+  'That seagrass field outside was planted by my grandmother. She said the more the grass grows, the more fish come; the more fish, the brighter the lamps.',
+  'When you\'re mining, remember to save a breath — the pearl ore is all twenty meters down, and the black water there bites.'],
+ {label:'Trade 2 pearls for Seagrass Sprout ×12', cost:2, give:B.SEED, amount:12,
+  reply:'Take them. Plant them in the sand, and don\'t trample my field.'});
+makeVillager('Po','Pearl Merchant', 36,30, 0xc2703f,'🦪',
+ ['I only take one kind of currency here: pearls. Round ones, iridescent ones — the rounder, the more they\'re worth.',
+  'I traded thirty pearls to a shipwreck for that gold brick. Now I won\'t part with a single one.',
+  'Swim southeast at night and you\'ll find a coral grove that glows. Don\'t stare too long, or you\'ll drift off.'],
+ {label:'Trade 5 pearls for Gold Brick ×2', cost:5, give:B.GOLD, amount:2,
+  reply:'Deal. Don\'t squander it in the deep — that place doesn\'t make change.'});
+makeVillager('Tai','Farm Warden', 32,37, 0x5f9f6e,'🐢',
+ ['To make farmland, dig one block into the sand, then scatter seagrass sprouts. In three days they grow waist-high.',
+  'Octopuses steal seagrass sprouts. I once saw one flip an entire field upside down.',
+  'Want to expand the farm? Wall it off with glass and it stays dry inside — but then the fish can\'t get in.'],
+ {label:'Trade 1 pearl for Driftwood Deck ×16', cost:1, give:B.PLANK, amount:16,
+  reply:'Take it. Deck laid over sand is the sturdiest.'});
+
+refreshHotbar();
+$('loadNote').textContent='World ready · '+chunks.size+' chunks · '+PALETTES[palIdx].name;
+loop();
+</script>
+</body>
+</html>
