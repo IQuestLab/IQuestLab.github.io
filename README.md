@@ -1,27 +1,26 @@
-# iquest-home
+# IQuest
 
-官网主页
+IQuest 官网源码，使用 React 和 Vite 构建。
 
-## 部署到 GitHub Pages（gh-pages 分支）
+- [IQuest-Q1](https://iquestlab.github.io/)
+- [IQuest Coder](https://iquestlab.github.io/iquest-coder-v1/)
 
-本项目构建产物在 `dist/`，并已内置适配 Pages 的配置（资源使用相对路径、路由使用 HashRouter）。
+## 本地开发
 
-### 1）推送代码后自动构建并发布（推荐）
+使用 Node.js 20，在仓库根目录运行：
 
-已新增 GitHub Actions 工作流：当代码 push 到 `main` 分支后，会自动执行构建并将 `dist/` 发布到 `gh-pages` 分支。
-工作流文件：`.github/workflows/deploy-gh-pages.yml`
+```bash
+npm ci
+npm start
+```
 
-### 2）在 GitHub 仓库里设置 Pages 来源（首次配置）
+访问 http://localhost:4000/。
 
-- Settings → Pages
-- Build and deployment → Source 选择 **Deploy from a branch**
-- Branch 选择 **`gh-pages`**，目录选择 **`/ (root)`**，保存
-
-稍等片刻即可通过 Pages 地址访问。
-
-### 3）手动发布（可选备用）
+## 构建与预览
 
 ```bash
 npm run build
-npm run deploy
+npm run preview -- --port 4173
 ```
+
+访问 http://localhost:4173/。推送到 `main` 后由 GitHub Actions 自动发布。

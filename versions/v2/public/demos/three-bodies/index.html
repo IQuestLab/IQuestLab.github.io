@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>The Kiss · Three Bodies — a golden three-body reverie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Cormorant:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Klimt "The Kiss" — low-contrast gold / ochre / dark brown */
+    --gold:        #d8b25a;
+    --gold-bright: #f0dca0;
+    --gold-deep:   #a9812f;
+    --ochre:       #b07a33;
+    --ochre-dim:   #7c5a26;
+    --cream:       #ece0bf;
+    --brown-1:     #2a1c11;
+    --brown-2:     #1b1109;
+    --brown-3:     #100a05;
+    --brown-edge:  #3a2817;
+    --ink:         #e7d9b8;
+    --ink-dim:     #b6a479;
+    --panel-bg:    rgba(24,15,8,0.62);
+    --panel-brd:   rgba(216,178,90,0.42);
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; overflow:hidden; background:#0b0704; }
+  body{
+    font-family:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+    cursor:default;
+  }
+  #stage{ position:fixed; inset:0; display:block; }
+  canvas{ display:block; touch-action:none; }
+
+  /* ---- vignette + grain over the whole scene ---- */
+  #vignette{
+    position:fixed; inset:0; pointer-events:none; z-index:5;
+    background:
+      radial-gradient(120% 120% at 50% 42%, rgba(0,0,0,0) 46%, rgba(0,0,0,0.28) 78%, rgba(0,0,0,0.62) 100%);
+    mix-blend-mode:multiply;
+  }
+  #grain{
+    position:fixed; inset:-50%; pointer-events:none; z-index:6; opacity:0.05;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    animation:grain 6s steps(6) infinite;
+  }
+  @keyframes grain{
+    0%{transform:translate(0,0)} 20%{transform:translate(-4%,3%)}
+    40%{transform:translate(3%,-2%)} 60%{transform:translate(-2%,4%)}
+    80%{transform:translate(4%,-3%)} 100%{transform:translate(0,0)}
+  }
+
+  /* ---- shared panel look: gilded frame over dark umber ---- */
+  .panel{
+    position:fixed; z-index:10;
+    background:var(--panel-bg);
+    border:1px solid var(--panel-brd);
+    border-radius:2px;
+    backdrop-filter:blur(7px) saturate(1.05);
+    -webkit-backdrop-filter:blur(7px) saturate(1.05);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.5),
+      0 10px 40px rgba(0,0,0,0.55),
+      inset 0 0 32px rgba(169,129,47,0.10);
+  }
+  .panel::before{ /* inner hairline gold rule */
+    content:""; position:absolute; inset:5px; border:1px solid rgba(216,178,90,0.22);
+    border-radius:1px; pointer-events:none;
+  }
+
+  /* Klimt corner spirals */
+  .corner{ position:absolute; width:26px; height:26px; pointer-events:none; opacity:0.8; }
+  .corner svg{ width:100%; height:100%; display:block; }
+  .corner.tl{ top:4px; left:4px; }
+  .corner.tr{ top:4px; right:4px; transform:scaleX(-1); }
+  .corner.bl{ bottom:4px; left:4px; transform:scaleY(-1); }
+  .corner.br{ bottom:4px; right:4px; transform:scale(-1,-1); }
+
+  /* ---- Title, top-left ---- */
+  #title{ top:18px; left:18px; padding:14px 20px 13px; max-width:min(46vw,360px); }
+  #title h1{
+    margin:0; font-weight:600; letter-spacing:0.06em;
+    font-size:clamp(20px,2.6vw,30px); line-height:1;
+    color:var(--gold-bright);
+    text-shadow:0 1px 0 #000, 0 0 18px rgba(216,178,90,0.35);
+  }
+  #title .sub{
+    margin-top:6px; font-style:italic; font-size:clamp(12px,1.4vw,15px);
+    color:var(--ink-dim); letter-spacing:0.04em;
+  }
+  #title .rule{
+    height:1px; margin:9px 0 7px;
+    background:linear-gradient(90deg,transparent,var(--gold-deep),transparent);
+  }
+  #title .meta{ font-size:12px; color:var(--ink-dim); letter-spacing:0.05em; }
+  #title .meta b{ color:var(--gold); font-weight:600; }
+
+  /* ---- Controls, bottom-center ---- */
+  #controls{
+    left:50%; bottom:16px; transform:translateX(-50%);
+    padding:13px 16px 12px; display:flex; flex-direction:column; gap:11px;
+    width:min(94vw,720px);
+  }
+  .row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .row.labeled{ justify-content:space-between; }
+  .grouplabel{
+    font-size:11px; letter-spacing:0.22em; text-transform:uppercase;
+    color:var(--ochre); opacity:0.9; margin-right:2px;
+  }
+
+  button.kbtn{
+    font-family:inherit; color:var(--ink); cursor:pointer;
+    background:linear-gradient(180deg, rgba(58,40,23,0.75), rgba(27,17,9,0.85));
+    border:1px solid rgba(216,178,90,0.32);
+    padding:6px 12px; border-radius:2px; font-size:14px; letter-spacing:0.03em;
+    transition:transform .12s ease, box-shadow .18s ease, border-color .18s ease, color .18s;
+    min-height:32px;
+  }
+  button.kbtn:hover{ color:var(--gold-bright); border-color:var(--gold); box-shadow:0 0 14px rgba(216,178,90,0.28); transform:translateY(-1px); }
+  button.kbtn:active{ transform:translateY(0); }
+  button.kbtn.active{
+    color:#1b1109; background:linear-gradient(180deg,var(--gold-bright),var(--gold-deep));
+    border-color:var(--gold-bright); box-shadow:0 0 16px rgba(216,178,90,0.45);
+    text-shadow:none; font-weight:600;
+  }
+  button.kbtn:focus-visible{ outline:2px solid var(--gold-bright); outline-offset:2px; }
+
+  .sep{ width:1px; align-self:stretch; background:rgba(216,178,90,0.2); margin:0 2px; }
+
+  /* range sliders, gilded */
+  .slider-wrap{ display:flex; align-items:center; gap:9px; flex:1 1 200px; min-width:180px; }
+  .slider-wrap span.name{ font-size:12px; color:var(--ink-dim); letter-spacing:0.06em; min-width:42px; }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; flex:1; height:3px; border-radius:3px;
+    background:linear-gradient(90deg,var(--gold-deep),var(--gold-bright));
+    outline:none; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:15px; height:15px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold-deep));
+    border:1px solid #2a1c11; box-shadow:0 0 8px rgba(216,178,90,0.6);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:15px; height:15px; border-radius:50%; border:1px solid #2a1c11;
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold-deep));
+    box-shadow:0 0 8px rgba(216,178,90,0.6);
+  }
+  input[type=range]:focus-visible{ box-shadow:0 0 0 2px var(--gold-bright); }
+  .val{ font-size:12px; color:var(--gold); min-width:52px; text-align:right; letter-spacing:0.03em; }
+
+  /* ---- Info panel, right ---- */
+  #info{ top:18px; right:18px; padding:14px 16px 13px; width:min(80vw,258px); }
+  #info h2{
+    margin:0 0 2px; font-size:15px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--gold); font-weight:600;
+  }
+  #info .hint{ font-style:italic; font-size:12.5px; color:var(--ink-dim); margin-bottom:9px; }
+  .body-card{ display:none; }
+  .body-card.show{ display:block; animation:fade .35s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none} }
+  .body-card .bname{ display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+  .dot{ width:13px; height:13px; border-radius:50%; box-shadow:0 0 10px currentColor; }
+  .bname .bn{ font-size:19px; color:var(--gold-bright); letter-spacing:0.03em; }
+  .stat{ display:flex; justify-content:space-between; font-size:14px; padding:3px 0; border-bottom:1px dotted rgba(216,178,90,0.16); }
+  .stat:last-child{ border-bottom:none; }
+  .stat .k{ color:var(--ink-dim); letter-spacing:0.04em; }
+  .stat .v{ color:var(--cream); font-variant-numeric:tabular-nums; }
+  .swatch-note{ margin-top:8px; font-size:11.5px; color:var(--ochre-dim); font-style:italic; }
+
+  #loading{
+    position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:16px; background:radial-gradient(circle at 50% 45%, #241606, #0b0704 70%);
+    transition:opacity .8s ease; color:var(--gold);
+  }
+  #loading .ring{
+    width:58px; height:58px; border-radius:50%;
+    border:2px solid rgba(216,178,90,0.18); border-top-color:var(--gold-bright);
+    animation:spin 1.1s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  #loading .lt{ font-style:italic; letter-spacing:0.08em; font-size:17px; color:var(--ink-dim); }
+  #loading.hide{ opacity:0; pointer-events:none; }
+
+  #fatal{
+    position:fixed; inset:0; z-index:60; display:none; align-items:center; justify-content:center;
+    background:#0b0704; color:var(--gold); font-style:italic; font-size:18px; text-align:center; padding:30px;
+  }
+
+  @media (max-width:640px){
+    #title{ max-width:62vw; padding:11px 14px; }
+    #info{ width:min(66vw,220px); padding:11px 12px; }
+    #controls{ padding:11px 12px; }
+    .grouplabel{ display:none; }
+  }
+</style>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+
+  <!-- Title -->
+  <div id="title" class="panel">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <h1>The Kiss · Three Bodies</h1>
+    <div class="sub">a golden three&#8209;body reverie in silk &amp; gold</div>
+    <div class="rule"></div>
+    <div class="meta">integrator&nbsp; <b>velocity&nbsp;Verlet</b> &nbsp;·&nbsp; steps&nbsp; <b id="m-steps">—</b> &nbsp;·&nbsp; t&nbsp;=&nbsp;<b id="m-time">0.00</b></div>
+  </div>
+
+  <!-- Info / selection -->
+  <div id="info" class="panel">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <h2>Celestial Body</h2>
+    <div class="hint" id="info-hint">click a golden body to read its mass, velocity &amp; place.</div>
+    <div class="body-card" id="card">
+      <div class="bname"><span class="dot" id="c-dot"></span><span class="bn" id="c-name">—</span></div>
+      <div class="stat"><span class="k">mass</span><span class="v" id="c-mass">—</span></div>
+      <div class="stat"><span class="k">speed |v|</span><span class="v" id="c-speed">—</span></div>
+      <div class="stat"><span class="k">velocity</span><span class="v" id="c-vel">—</span></div>
+      <div class="stat"><span class="k">position</span><span class="v" id="c-pos">—</span></div>
+      <div class="stat"><span class="k">distance</span><span class="v" id="c-dist">—</span></div>
+      <div class="swatch-note" id="c-note"></div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls" class="panel">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+
+    <div class="row">
+      <span class="grouplabel">Choreography</span>
+      <button class="kbtn preset active" data-preset="figure8">Figure&#8209;Eight</button>
+      <button class="kbtn preset" data-preset="waltz">Binary &amp; Companion</button>
+      <button class="kbtn preset" data-preset="burrau">Burrau Chaos</button>
+      <button class="kbtn preset" data-preset="chaos">Wandering Three</button>
+    </div>
+
+    <div class="row">
+      <span class="grouplabel">Viewpoint</span>
+      <button class="kbtn view active" data-view="overview">Overview</button>
+      <button class="kbtn view" data-view="top">Plan&nbsp;View</button>
+      <button class="kbtn view" data-view="close">Intimate</button>
+      <button class="kbtn view" data-view="follow">Follow&nbsp;Body</button>
+      <button class="kbtn view" data-view="cinema">Cinematic</button>
+    </div>
+
+    <div class="row labeled">
+      <span class="grouplabel">Interval</span>
+      <div class="slider-wrap">
+        <span class="name">from</span>
+        <input type="range" id="iv-start" min="0" max="1000" value="0">
+        <span class="val" id="iv-start-v">0%</span>
+      </div>
+      <div class="slider-wrap">
+        <span class="name">to</span>
+        <input type="range" id="iv-end" min="0" max="1000" value="1000">
+        <span class="val" id="iv-end-v">100%</span>
+      </div>
+    </div>
+
+    <div class="row">
+      <span class="grouplabel">Reel</span>
+      <button class="kbtn" id="btn-play">⏸ Pause</button>
+      <button class="kbtn" id="btn-replay">↻ Replay</button>
+      <div class="slider-wrap" style="flex:1 1 160px;">
+        <span class="name">tempo</span>
+        <input type="range" id="spd" min="1" max="100" value="34">
+        <span class="val" id="spd-v">1.0×</span>
+      </div>
+      <div class="sep"></div>
+      <button class="kbtn" id="btn-trails">Silk: full</button>
+    </div>
+  </div>
+
+  <div id="loading">
+    <div class="ring"></div>
+    <div class="lt">weaving the golden threads…</div>
+  </div>
+  <div id="fatal">This reverie needs WebGL, which your browser has declined to provide.</div>
+
+<script>
+/* =====================================================================
+   The Kiss · Three Bodies
+   Velocity-Verlet N-body integration rendered as glowing gold silk.
+   ===================================================================== */
+(function(){
+  "use strict";
+
+  /* ---------- corner spiral ornaments (Klimt motif) ---------- */
+  var SPIRAL = "<svg viewBox='0 0 26 26' xmlns='http://www.w3.org/2000/svg'>"
+    + "<path d='M2 2 H10 M2 2 V10' stroke='rgba(216,178,90,0.55)' stroke-width='1' fill='none'/>"
+    + "<path d='M4 4 H8 M4 4 V8' stroke='rgba(216,178,90,0.30)' stroke-width='0.8' fill='none'/>"
+    + "<path d='M6 6 a2 2 0 1 1 -2 -2' stroke='rgba(240,220,160,0.6)' stroke-width='0.9' fill='none'/>"
+    + "<circle cx='2' cy='2' r='1.1' fill='rgba(240,220,160,0.8)'/></svg>";
+  Array.prototype.forEach.call(document.getElementsByClassName('corner'), function(el){ el.innerHTML = SPIRAL; });
+
+  /* ---------- palette per body (low-contrast golds) ---------- */
+  var BODY_STYLE = [
+    { name:"Aurum",   hex:0xf0dca0, css:"#f0dca0", note:"the gilded one — brightest leaf" },
+    { name:"Ochre",   hex:0xc98f3a, css:"#c98f3a", note:"the earth-bound amber" },
+    { name:"Bronze",  hex:0xa9812f, css:"#a9812f", note:"the deep old bronze" }
+  ];
+
+  /* ---------- presets ---------- */
+  var G = 1.0;
+  function preset(key){
+    if(key==="waltz"){
+      // hierarchical triple: a tight binary with a wide circumbinary companion
+      return {
+        label:"Binary & Companion", dt:0.006, soft2:1e-6,
+        bodies:[
+          { m:1, p:[ 0.5,0,0], v:[0, 0.7071,0] },
+          { m:1, p:[-0.5,0,0], v:[0,-0.7071,0] },
+          { m:1, p:[ 0,  6,0], v:[-0.5774,0,0] }
+        ], steps:60000
+      };
+    }
+    if(key==="burrau"){
+      return {
+        label:"Burrau Chaos", dt:0.0022, soft2:4e-3,
+        bodies:[
+          { m:3, p:[ 1, 3,0], v:[0,0,0] },
+          { m:4, p:[-2,-1,0], v:[0,0,0] },
+          { m:5, p:[ 1,-1,0], v:[0,0,0] }
+        ], steps:40000
+      };
+    }
+    if(key==="chaos"){
+      // a gently escaping three — deterministic hand-tuned set
+      return {
+        label:"Wandering Three", dt:0.004, soft2:1e-4,
+        bodies:[
+          { m:1.4, p:[ 1.2, 0.4,0.2], v:[-0.5, 0.55,0.1] },
+          { m:1.0, p:[-1.0, 0.8,-0.3], v:[ 0.4,-0.6,0.15] },
+          { m:0.9, p:[-0.1,-1.3,0.1], v:[ 0.35,0.2,-0.2] }
+        ], steps:70000
+      };
+    }
+    // figure-8 (Chenciner–Montgomery), G=m=1
+    var x1=0.97000436, y1=-0.24308753, v3x=-0.93240737, v3y=-0.86473146;
+    return {
+      label:"Figure-Eight", dt:0.004, soft2:1e-6,
+      bodies:[
+        { m:1, p:[ x1, y1,0],           v:[ -v3x/2, -v3y/2,0] },
+        { m:1, p:[-x1,-y1,0],           v:[ -v3x/2, -v3y/2,0] },
+        { m:1, p:[ 0,0,0],              v:[ v3x, v3y,0] }
+      ], steps:80000
+    };
+  }
+
+  /* ---------- physics: velocity Verlet, capped at 100k steps ---------- */
+  function integrate(cfg){
+    var N = Math.min(cfg.steps, 100000);
+    var nb = cfg.bodies.length;
+    var dt = cfg.dt, soft2 = cfg.soft2;
+    var m = cfg.bodies.map(function(b){ return b.m; });
+
+    // flat state
+    var px=[], py=[], pz=[], vx=[], vy=[], vz=[];
+    for(var i=0;i<nb;i++){
+      var b=cfg.bodies[i];
+      px.push(b.p[0]); py.push(b.p[1]); pz.push(b.p[2]);
+      vx.push(b.v[0]); vy.push(b.v[1]); vz.push(b.v[2]);
+    }
+    // remove net linear momentum so the centre of mass stays fixed (no drift)
+    var Mc=0, Pcx=0, Pcy=0, Pcz=0;
+    for(var ic=0;ic<nb;ic++){ Mc+=m[ic]; Pcx+=m[ic]*vx[ic]; Pcy+=m[ic]*vy[ic]; Pcz+=m[ic]*vz[ic]; }
+    for(var ic2=0;ic2<nb;ic2++){ vx[ic2]-=Pcx/Mc; vy[ic2]-=Pcy/Mc; vz[ic2]-=Pcz/Mc; }
+    // storage
+    var PX=new Float64Array(N*nb), PY=new Float64Array(N*nb), PZ=new Float64Array(N*nb);
+    var VX=new Float64Array(N*nb), VY=new Float64Array(N*nb), VZ=new Float64Array(N*nb);
+
+    var ax=new Float64Array(nb), ay=new Float64Array(nb), az=new Float64Array(nb);
+    function accel(){
+      for(var i=0;i<nb;i++){ ax[i]=0; ay[i]=0; az[i]=0; }
+      for(var i=0;i<nb;i++){
+        for(var j=i+1;j<nb;j++){
+          var dx=px[j]-px[i], dy=py[j]-py[i], dz=pz[j]-pz[i];
+          var r2=dx*dx+dy*dy+dz*dz+soft2;
+          var inv=1/(r2*Math.sqrt(r2));
+          var f=G*inv;
+          ax[i]+=f*m[j]*dx; ay[i]+=f*m[j]*dy; az[i]+=f*m[j]*dz;
+          ax[j]-=f*m[i]*dx; ay[j]-=f*m[i]*dy; az[j]-=f*m[i]*dz;
+        }
+      }
+    }
+
+    function store(step){
+      for(var i=0;i<nb;i++){
+        var k=step*nb+i;
+        PX[k]=px[i]; PY[k]=py[i]; PZ[k]=pz[i];
+        VX[k]=vx[i]; VY[k]=vy[i]; VZ[k]=vz[i];
+      }
+    }
+
+    accel();
+    var step=0;
+    for(step=0; step<N; step++){
+      // x += v dt + 0.5 a dt^2
+      for(var i=0;i<nb;i++){
+        px[i]+=vx[i]*dt+0.5*ax[i]*dt*dt;
+        py[i]+=vy[i]*dt+0.5*ay[i]*dt*dt;
+        pz[i]+=vz[i]*dt+0.5*az[i]*dt*dt;
+      }
+      var a0x=ax.slice? Float64Array.from(ax):ax; // keep prev
+      var pax=Float64Array.from(ax), pay=Float64Array.from(ay), paz=Float64Array.from(az);
+      accel();
+      for(var i2=0;i2<nb;i2++){
+        vx[i2]+=0.5*(pax[i2]+ax[i2])*dt;
+        vy[i2]+=0.5*(pay[i2]+ay[i2])*dt;
+        vz[i2]+=0.5*(paz[i2]+az[i2])*dt;
+      }
+      store(step+1);
+      // guard against blow-ups (collisions/escapes)
+      if(!isFinite(px[0]+py[0]+pz[0]+px[1]+py[1])) { N=step+1; break; }
+    }
+    return { N:N, nb:nb, m:m, dt:dt,
+             PX:PX,PY:PY,PZ:PZ, VX:VX,VY:VY,VZ:VZ, label:cfg.label };
+  }
+
+  /* ---------- boot Three.js with CDN fallback ---------- */
+  var CDNS=[
+    "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js",
+    "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js",
+    "https://unpkg.com/three@0.128.0/build/three.min.js"
+  ];
+  function loadThree(i){
+    if(i>=CDNS.length){ document.getElementById('fatal').style.display='flex'; return; }
+    var s=document.createElement('script');
+    s.src=CDNS[i];
+    s.onload=function(){ if(window.THREE) start(); else loadThree(i+1); };
+    s.onerror=function(){ loadThree(i+1); };
+    document.head.appendChild(s);
+  }
+  loadThree(0);
+
+  /* =================================================================== */
+  function start(){
+    var canvas=document.getElementById('stage');
+    var renderer;
+    try{
+      renderer=new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:false});
+    }catch(e){ document.getElementById('fatal').style.display='flex'; return; }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    if('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
+    else if('outputEncoding' in renderer) renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.18;
+
+    var scene=new THREE.Scene();
+    var camera=new THREE.PerspectiveCamera(48, window.innerWidth/window.innerHeight, 0.01, 4000);
+
+    /* ---- background: gilded umber dome ---- */
+    (function(){
+      var c=document.createElement('canvas'); c.width=32; c.height=512;
+      var g=c.getContext('2d');
+      var grd=g.createLinearGradient(0,0,0,512);
+      grd.addColorStop(0,'#38220f');
+      grd.addColorStop(0.45,'#241606');
+      grd.addColorStop(1,'#0c0704');
+      g.fillStyle=grd; g.fillRect(0,0,32,512);
+      var tex=new THREE.CanvasTexture(c);
+      if('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+      var dome=new THREE.Mesh(
+        new THREE.SphereGeometry(1600,32,24),
+        new THREE.MeshBasicMaterial({map:tex, side:THREE.BackSide, depthWrite:false})
+      );
+      scene.add(dome);
+    })();
+
+    /* ---- lighting for the body spheres ---- */
+    scene.add(new THREE.AmbientLight(0x5a4326, 0.9));
+    var key=new THREE.PointLight(0xffd98a, 1.1, 0, 2); scene.add(key);
+    var rim=new THREE.PointLight(0xb07a33, 0.7, 0, 2); scene.add(rim);
+
+    /* ---- gold dust ---- */
+    var dust;
+    (function(){
+      var n=700, arr=new Float32Array(n*3);
+      for(var i=0;i<n;i++){
+        var r=40+Math.random()*260, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+        arr[i*3]=r*Math.sin(ph)*Math.cos(th);
+        arr[i*3+1]=r*Math.cos(ph);
+        arr[i*3+2]=r*Math.sin(ph)*Math.sin(th);
+      }
+      var g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(arr,3));
+      var m=new THREE.PointsMaterial({color:0xd8b25a, size:0.9, sizeAttenuation:true,
+        transparent:true, opacity:0.28, blending:THREE.AdditiveBlending, depthWrite:false});
+      dust=new THREE.Points(g,m); scene.add(dust);
+    })();
+
+    /* ---- soft glow sprite ---- */
+    function glowTex(){
+      var c=document.createElement('canvas'); c.width=c.height=64;
+      var g=c.getContext('2d');
+      var grd=g.createRadialGradient(32,32,0,32,32,32);
+      grd.addColorStop(0,'rgba(255,248,225,1)');
+      grd.addColorStop(0.18,'rgba(247,229,180,0.92)');
+      grd.addColorStop(0.45,'rgba(216,178,90,0.42)');
+      grd.addColorStop(1,'rgba(169,129,47,0)');
+      g.fillStyle=grd; g.fillRect(0,0,64,64);
+      return new THREE.CanvasTexture(c);
+    }
+    var GLOW=glowTex();
+
+    /* ---- custom orbit controls (drag / wheel / pinch) ---- */
+    var orbit={
+      target:new THREE.Vector3(0,0,0),
+      cur:{r:20, th:0.7, ph:1.05},
+      tgt:{r:20, th:0.7, ph:1.05},
+      minR:0.2, maxR:900
+    };
+    function applyCamera(){
+      var c=orbit.cur, sp=Math.sin(c.ph);
+      var x=c.r*sp*Math.sin(c.th), y=c.r*Math.cos(c.ph), z=c.r*sp*Math.cos(c.th);
+      camera.position.set(orbit.target.x+x, orbit.target.y+y, orbit.target.z+z);
+      camera.lookAt(orbit.target);
+    }
+    var drag={on:false,id:null,x:0,y:0,moved:false}, pinch={on:false,d:0};
+    function pointerPos(e){ return e.touches? {x:e.touches[0].clientX,y:e.touches[0].clientY} : {x:e.clientX,y:e.clientY}; }
+    function onDown(e){
+      var p=pointerPos(e); drag.on=true; drag.moved=false; drag.id=(e.pointerId!=null?e.pointerId:'m');
+      drag.x=p.x; drag.y=p.y; canvas.style.cursor='grabbing';
+      if(e.touches && e.touches.length===2){ pinch.on=true; pinch.d=touchDist(e); }
+    }
+    function touchDist(e){ var a=e.touches[0],b=e.touches[1]; return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY); }
+    function onMove(e){
+      if(pinch.on && e.touches && e.touches.length===2){
+        var d=touchDist(e); orbit.tgt.r=clampR(orbit.tgt.r*(pinch.d/d)); pinch.d=d; e.preventDefault(); return;
+      }
+      if(!drag.on) return;
+      var p=pointerPos(e), dx=p.x-drag.x, dy=p.y-drag.y; drag.x=p.x; drag.y=p.y;
+      if(Math.abs(dx)+Math.abs(dy)>3) drag.moved=true;
+      orbit.tgt.th -= dx*0.005;
+      orbit.tgt.ph  = clampPh(orbit.tgt.ph - dy*0.005);
+      if(e.cancelable) e.preventDefault();
+    }
+    function onUp(){ drag.on=false; pinch.on=false; canvas.style.cursor='default'; }
+    function onWheel(e){ orbit.tgt.r=clampR(orbit.tgt.r*(1+e.deltaY*0.0011)); e.preventDefault(); }
+    function clampR(r){ return Math.max(orbit.minR, Math.min(orbit.maxR, r)); }
+    function clampPh(p){ return Math.max(0.08, Math.min(Math.PI-0.08, p)); }
+
+    canvas.addEventListener('mousedown',onDown);
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+    canvas.addEventListener('touchstart',onDown,{passive:false});
+    canvas.addEventListener('touchmove',onMove,{passive:false});
+    canvas.addEventListener('touchend',onUp);
+    canvas.addEventListener('wheel',onWheel,{passive:false});
+
+    /* ---------- state ---------- */
+    var sim=null;               // integration result
+    var threads=[];             // per body {points, head, light}
+    var unit=1;                 // robust scene radius
+    var state={
+      preset:'figure8', view:'overview',
+      ivStart:0, ivEnd:1,         // fractions 0..1
+      head:0,                     // fractional step (comet)
+      filled:0,                   // monotonic furthest reach (full silk)
+      playing:true, speed:0.34,   // 0..1 mapped
+      trailsFull:true,
+      selected:null               // body index or null
+    };
+
+    function percentile(arr, p){
+      var a=Array.prototype.slice.call(arr); a.sort(function(x,y){return x-y;});
+      return a[Math.min(a.length-1, Math.max(0, Math.floor(p*a.length)))];
+    }
+
+    /* build the silk threads for the current simulation */
+    function buildScene(){
+      // clear old
+      threads.forEach(function(t){ scene.remove(t.line); scene.remove(t.points); scene.remove(t.head); if(t.halo) scene.remove(t.halo); });
+      threads=[];
+
+      // robust scale from sampled radii around the whole-cloud centroid
+      var nb=sim.nb, N=sim.N;
+      var cx=0,cy=0,cz=0, cnt=0;
+      for(var s=0;s<N;s+=Math.max(1,Math.floor(N/400))){
+        for(var i=0;i<nb;i++){ var k=s*nb+i; cx+=sim.PX[k]; cy+=sim.PY[k]; cz+=sim.PZ[k]; cnt++; }
+      }
+      cx/=cnt; cy/=cnt; cz/=cnt;
+      var radii=[];
+      for(var s2=0;s2<N;s2+=Math.max(1,Math.floor(N/600))){
+        for(var i2=0;i2<nb;i2++){
+          var k2=s2*nb+i2;
+          radii.push(Math.hypot(sim.PX[k2]-cx, sim.PY[k2]-cy, sim.PZ[k2]-cz));
+        }
+      }
+      unit = Math.max(0.4, percentile(radii, 0.92));
+
+      for(var b=0;b<nb;b++){
+        var col=BODY_STYLE[b%BODY_STYLE.length].hex;
+        // full-resolution silk thread — a continuous 1px additive line (never blows out)
+        var pos=new Float32Array(N*3);
+        for(var s3=0;s3<N;s3++){ var k3=s3*nb+b; pos[s3*3]=sim.PX[k3]; pos[s3*3+1]=sim.PY[k3]; pos[s3*3+2]=sim.PZ[k3]; }
+        var lineGeo=new THREE.BufferGeometry();
+        lineGeo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+        lineGeo.setDrawRange(0,0);
+        var line=new THREE.Line(lineGeo, new THREE.LineBasicMaterial({
+          color:col, transparent:true, opacity:0.7, blending:THREE.AdditiveBlending, depthWrite:false
+        }));
+        scene.add(line);
+
+        // sparse glow points for sheen — subsampled so additive overlap stays golden, not white
+        var stride=Math.max(1, Math.floor(N/2000));
+        var gcount=Math.floor((N-1)/stride)+1;
+        var gpos=new Float32Array(gcount*3);
+        for(var gi=0; gi<gcount; gi++){ var kk=(gi*stride)*nb+b; gpos[gi*3]=sim.PX[kk]; gpos[gi*3+1]=sim.PY[kk]; gpos[gi*3+2]=sim.PZ[kk]; }
+        var geo=new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(gpos,3));
+        geo.setDrawRange(0,0);
+        var mat=new THREE.PointsMaterial({
+          color:col, size:unit*0.09, sizeAttenuation:true, map:GLOW,
+          transparent:true, opacity:0.6, blending:THREE.AdditiveBlending, depthWrite:false
+        });
+        var pts=new THREE.Points(geo,mat);
+        scene.add(pts);
+
+        // head sphere
+        var hm=Math.cbrt(sim.m[b]);
+        var head=new THREE.Mesh(
+          new THREE.SphereGeometry(unit*0.055*(0.7+hm*0.5), 20, 16),
+          new THREE.MeshStandardMaterial({color:col, emissive:col, emissiveIntensity:1.15,
+            metalness:0.85, roughness:0.32})
+        );
+        scene.add(head);
+
+        // additive halo that dazzles around the moving body-head
+        var halo=new THREE.Sprite(new THREE.SpriteMaterial({
+          map:GLOW, color:col, transparent:true, opacity:0.85,
+          blending:THREE.AdditiveBlending, depthWrite:false
+        }));
+        halo.scale.setScalar(unit*0.55);
+        scene.add(halo);
+
+        threads.push({line:line, points:pts, stride:stride, head:head, halo:halo, col:col});
+      }
+
+      // orbit limits
+      orbit.minR=unit*0.12; orbit.maxR=unit*60;
+      // reset selection & interval
+      state.selected=null; updateInfo(null);
+      document.getElementById('info-hint').style.display='block';
+      document.getElementById('card').classList.remove('show');
+
+      setView('overview', true);
+      state.head = stepFromFrac(state.ivStart);
+      state.filled = 0;
+    }
+
+    function stepFromFrac(f){ return f*(sim.N-1); }
+    function fracFromStep(st){ return st/(sim.N-1); }
+
+    /* ---------- viewpoint switching ---------- */
+    var camTween=null;
+    function setView(v, instant){
+      state.view=v;
+      document.querySelectorAll('.view').forEach(function(btn){ btn.classList.toggle('active', btn.dataset.view===v); });
+      var tgt={r:orbit.tgt.r, th:orbit.tgt.th, ph:orbit.tgt.ph, target:orbit.target.clone()};
+      if(v==='overview'){ tgt={r:unit*2.6, th:0.7, ph:1.02, target:new THREE.Vector3(0,0,0)}; }
+      else if(v==='top'){ tgt={r:unit*2.3, th:orbit.tgt.th, ph:0.12, target:new THREE.Vector3(0,0,0)}; }
+      else if(v==='close'){ tgt={r:unit*0.8, th:0.9, ph:1.15, target:orbit.target.clone()}; }
+      else if(v==='follow'){ /* handled per-frame */ }
+      else if(v==='cinema'){ tgt={r:unit*2.2, th:orbit.tgt.th, ph:1.25, target:new THREE.Vector3(0,0,0)}; }
+      if(instant){ orbit.tgt.r=tgt.r; orbit.tgt.th=tgt.th; orbit.tgt.ph=tgt.ph; orbit.target.copy(tgt.target); }
+      else{ camTween={t:0, from:{r:orbit.tgt.r,th:orbit.tgt.th,ph:orbit.tgt.ph,target:orbit.target.clone()}, to:tgt}; }
+    }
+
+    /* ---------- selection via raycast ---------- */
+    var ray=new THREE.Raycaster();
+    var mouse=new THREE.Vector2();
+    function onClick(e){
+      if(drag.on || drag.moved) return; // ignore orbit drags
+      var p = e.changedTouches? e.changedTouches[0] : e;
+      mouse.x=(p.clientX/window.innerWidth)*2-1;
+      mouse.y=-(p.clientY/window.innerHeight)*2+1;
+      ray.setFromCamera(mouse, camera);
+      var meshes=threads.map(function(t){ return t.head; });
+      var hits=ray.intersectObjects(meshes, false);
+      if(hits.length){ selectBody(meshes.indexOf(hits[0].object)); }
+      else { selectBody(null); } // click empty space to release
+    }
+    function selectBody(idx){
+      state.selected=idx;
+      var hint=document.getElementById('info-hint'), card=document.getElementById('card');
+      if(idx==null){
+        hint.style.display='block'; card.classList.remove('show');
+      } else {
+        hint.style.display='none'; card.classList.add('show');
+        updateInfo(idx);
+      }
+    }
+    canvas.addEventListener('click', onClick);
+
+    function fmt(n){ return (n>=0?' ':'') + n.toFixed(3); }
+    function updateInfo(idx){
+      var card=document.getElementById('card');
+      if(idx==null){ card.classList.remove('show'); document.getElementById('info-hint').style.display='block'; return; }
+      var st=BODY_STYLE[idx%BODY_STYLE.length];
+      document.getElementById('c-dot').style.color=st.css;
+      document.getElementById('c-dot').style.background=st.css;
+      document.getElementById('c-name').textContent=st.name;
+      document.getElementById('c-mass').textContent=sim.m[idx].toFixed(3);
+      document.getElementById('c-note').textContent=st.note;
+      card.classList.add('show');
+    }
+    function refreshInfoLive(){
+      var idx=state.selected; if(idx==null) return;
+      var N=sim.N, h=Math.min(N-1, Math.max(0, Math.round(state.head)));
+      var k=h*sim.nb+idx;
+      var vx=sim.VX[k], vy=sim.VY[k], vz=sim.VZ[k];
+      var sp=Math.sqrt(vx*vx+vy*vy+vz*vz);
+      document.getElementById('c-speed').textContent=sp.toFixed(4);
+      document.getElementById('c-vel').textContent="("+fmt(vx)+", "+fmt(vy)+", "+fmt(vz)+")";
+      document.getElementById('c-pos').textContent="("+fmt(sim.PX[k])+", "+fmt(sim.PY[k])+", "+fmt(sim.PZ[k])+")";
+      var d=Math.sqrt(sim.PX[k]*sim.PX[k]+sim.PY[k]*sim.PY[k]+sim.PZ[k]*sim.PZ[k]);
+      document.getElementById('c-dist').textContent=d.toFixed(3);
+    }
+
+    /* ---------- interval + playback controls ---------- */
+    var ivs=document.getElementById('iv-start'), ive=document.getElementById('iv-end');
+    function syncInterval(){
+      var a=parseInt(ivs.value,10)/1000, b=parseInt(ive.value,10)/1000;
+      if(a>b){ // keep ordered; move the one that was changed handled by caller
+      }
+      state.ivStart=Math.min(a,b); state.ivEnd=Math.max(a,b);
+      document.getElementById('iv-start-v').textContent=Math.round(state.ivStart*100)+'%';
+      document.getElementById('iv-end-v').textContent=Math.round(state.ivEnd*100)+'%';
+      // clamp head into window
+      var hs=stepFromFrac(state.ivStart), he=stepFromFrac(state.ivEnd);
+      if(state.head<hs) state.head=hs;
+      if(state.head>he) state.head=he;
+      state.filled=0; // regrow the silk over the new window
+    }
+    ivs.addEventListener('input', function(){ if(parseInt(ivs.value,10)>parseInt(ive.value,10)) ive.value=ivs.value; syncInterval(); });
+    ive.addEventListener('input', function(){ if(parseInt(ive.value,10)<parseInt(ivs.value,10)) ivs.value=ive.value; syncInterval(); });
+
+    var spd=document.getElementById('spd');
+    function syncSpeed(){ state.speed=parseInt(spd.value,10)/100; document.getElementById('spd-v').textContent=state.speed.toFixed(2)+'×'; }
+    spd.addEventListener('input', syncSpeed); syncSpeed();
+
+    var btnPlay=document.getElementById('btn-play');
+    btnPlay.addEventListener('click', function(){
+      state.playing=!state.playing;
+      btnPlay.textContent=state.playing?'⏸ Pause':'▶ Play';
+      btnPlay.classList.toggle('active', !state.playing);
+    });
+    document.getElementById('btn-replay').addEventListener('click', function(){
+      state.head=stepFromFrac(state.ivStart); state.filled=0; state.playing=true;
+      btnPlay.textContent='⏸ Pause'; btnPlay.classList.remove('active');
+    });
+    var btnTrails=document.getElementById('btn-trails');
+    btnTrails.addEventListener('click', function(){
+      state.trailsFull=!state.trailsFull;
+      btnTrails.textContent='Silk: '+(state.trailsFull?'full':'window');
+      btnTrails.classList.toggle('active', !state.trailsFull);
+    });
+
+    document.querySelectorAll('.preset').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        document.querySelectorAll('.preset').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        state.preset=btn.dataset.preset;
+        rebuild();
+      });
+    });
+    document.querySelectorAll('.view').forEach(function(btn){
+      btn.addEventListener('click', function(){ setView(btn.dataset.view, false); });
+    });
+
+    /* ---------- build / rebuild simulation ---------- */
+    function rebuild(){
+      document.getElementById('loading').classList.remove('hide');
+      // let the spinner paint before the synchronous integrate
+      setTimeout(function(){
+        sim=integrate(preset(state.preset));
+        document.getElementById('m-steps').textContent=sim.N.toLocaleString();
+        buildScene();
+        syncInterval();
+        document.getElementById('loading').classList.add('hide');
+      }, 30);
+    }
+
+    /* ---------- animation loop ---------- */
+    var clock=new THREE.Clock();
+    var tmp=new THREE.Vector3();
+    function samplePos(idx, stepF, out){
+      var N=sim.N, i=Math.floor(stepF), f=stepF-i;
+      if(i>=N-1){ i=N-2; f=1; }
+      var k=i*sim.nb+idx, k2=(i+1)*sim.nb+idx;
+      out.set(
+        sim.PX[k]+(sim.PX[k2]-sim.PX[k])*f,
+        sim.PY[k]+(sim.PY[k2]-sim.PY[k])*f,
+        sim.PZ[k]+(sim.PZ[k2]-sim.PZ[k])*f
+      );
+    }
+
+    function animate(){
+      requestAnimationFrame(animate);
+      var dt=Math.min(0.05, clock.getDelta());
+
+      // ---- advance head ----
+      if(sim){
+        var N=sim.N;
+        var hs=stepFromFrac(state.ivStart), he=stepFromFrac(state.ivEnd);
+        var windowLen=Math.max(1, he-hs);
+        if(state.playing){
+          // tempo: traverse the window in ~ (6s / speed)
+          var perSec=(windowLen)/(6/Math.max(0.05,state.speed));
+          state.head += perSec*dt;
+          if(state.head>=he){ state.head=hs; } // loop the reel
+        }
+        if(state.head>state.filled) state.filled=state.head;
+        // ---- draw the silk (drawRange in each geometry's own vertex space) ----
+        // full   : the whole accumulated path [0 .. filled]
+        // window : only the current interval [hs .. head]
+        var lineStart, lineCount, ptStart, ptCount;
+        if(state.trailsFull){
+          lineStart=0; lineCount=Math.max(0, Math.floor(state.filled));
+          ptStart=0;   ptCount=Math.floor(state.filled/threads[0].stride)+1;
+        } else {
+          lineStart=Math.floor(hs); lineCount=Math.max(0, Math.floor(state.head-hs));
+          ptStart=Math.floor(hs/threads[0].stride); ptCount=Math.max(0, Math.floor((state.head-hs)/threads[0].stride)+1);
+        }
+        for(var b=0;b<sim.nb;b++){
+          var t=threads[b];
+          t.line.geometry.setDrawRange(lineStart, lineCount);
+          t.points.geometry.setDrawRange(ptStart, ptCount);
+          // head position
+          samplePos(b, state.head, tmp);
+          t.head.position.copy(tmp);
+          var isSel = (state.selected===b);
+          t.points.material.opacity = isSel?0.6:0.4;
+          t.points.material.size = unit*0.09*(isSel?1.3:1.0);
+          t.head.material.emissiveIntensity = isSel? (1.6+0.5*Math.sin(performance.now()*0.005)) : 1.1;
+          var sc = (isSel?1.35:1.0);
+          t.head.scale.setScalar(sc);
+          t.halo.position.copy(t.head.position);
+          t.halo.scale.setScalar(unit*0.55*sc);
+        }
+        // a travelling light on the selected/first body
+        samplePos(state.selected!=null?state.selected:0, state.head, tmp);
+        key.position.copy(tmp).multiplyScalar(1.0);
+        rim.position.set(tmp.x* -1, tmp.y+unit, tmp.z*-1);
+
+        // ---- follow / cinema behaviours ----
+        if(state.view==='follow' && state.selected!=null){
+          samplePos(state.selected, state.head, tmp);
+          orbit.target.lerp(tmp, Math.min(1, dt*4));
+        }
+        if(camTween){
+          camTween.t=Math.min(1, camTween.t+dt*1.6);
+          var e=1-Math.pow(1-camTween.t,3);
+          orbit.tgt.r = camTween.from.r+(camTween.to.r-camTween.from.r)*e;
+          orbit.tgt.th= camTween.from.th+(camTween.to.th-camTween.from.th)*e;
+          orbit.tgt.ph= camTween.from.ph+(camTween.to.ph-camTween.from.ph)*e;
+          orbit.target.lerpVectors(camTween.from.target, camTween.to.target, e);
+          if(camTween.t>=1) camTween=null;
+        }
+        if(state.view==='cinema'){ orbit.tgt.th += dt*0.12; }
+
+        // ---- live readouts ----
+        document.getElementById('m-time').textContent=(state.head*sim.dt).toFixed(2);
+        refreshInfoLive();
+      }
+
+      // ---- orbit damping ----
+      var k=Math.min(1, dt*7);
+      orbit.cur.r += (orbit.tgt.r-orbit.cur.r)*k;
+      orbit.cur.th+= (orbit.tgt.th-orbit.cur.th)*k;
+      orbit.cur.ph+= (orbit.tgt.ph-orbit.cur.ph)*k;
+      applyCamera();
+
+      dust.rotation.y += dt*0.01;
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', function(){
+      camera.aspect=window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // go
+    rebuild();
+    animate();
+  }
+})();
+</script>
+</body>
+</html>

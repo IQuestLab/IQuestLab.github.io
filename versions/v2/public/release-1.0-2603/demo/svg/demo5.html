@@ -1,0 +1,166 @@
+<svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <!-- 辉光滤镜 -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" in="coloredBlur" result="coloredBlurMatrix"/>
+      <feMerge>
+        <feMergeNode in="coloredBlurMatrix"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- 青色到紫色渐变 -->
+    <linearGradient id="cyanToPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ffff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#0080ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff00ff;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 紫色到青色渐变 -->
+    <linearGradient id="purpleToCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff00ff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8000ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00ffff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 黑色背景 -->
+  <rect width="800" height="800" fill="#000000"/>
+  
+  <!-- 中心发光圆环 -->
+  <g transform="translate(400,400)">
+    <circle r="60" fill="none" stroke="url(#cyanToPurple)" stroke-width="3" filter="url(#glow)" opacity="0.9">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="10s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="45" fill="none" stroke="url(#purpleToCyan)" stroke-width="2" filter="url(#glow)" opacity="0.7">
+      <animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="8s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="30" fill="none" stroke="url(#cyanToPurple)" stroke-width="4" filter="url(#glow)" opacity="0.8">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="6s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- 外围旋转圆环层1 -->
+  <g transform="translate(400,400)">
+    <circle r="120" fill="none" stroke="url(#cyanToPurple)" stroke-width="2" stroke-dasharray="20,10" filter="url(#glow)" opacity="0.6">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="15s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="140" fill="none" stroke="url(#purpleToCyan)" stroke-width="1.5" stroke-dasharray="5,15" filter="url(#glow)" opacity="0.5">
+      <animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="20s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- 外围旋转圆环层2 -->
+  <g transform="translate(400,400)">
+    <circle r="180" fill="none" stroke="url(#cyanToPurple)" stroke-width="1.5" stroke-dasharray="10,20,5,20" filter="url(#glow)" opacity="0.4">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="25s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="200" fill="none" stroke="url(#purpleToCyan)" stroke-width="1" stroke-dasharray="30,10,10,10" filter="url(#glow)" opacity="0.3">
+      <animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="30s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- 最外层轨道点 -->
+  <g transform="translate(400,400)">
+    <!-- 轨道1: 6个点 -->
+    <g>
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="20s" repeatCount="indefinite"/>
+      <circle r="250" fill="none" stroke="none"/>
+      <g>
+        <circle cx="0" cy="-250" r="6" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="216" cy="-125" r="6" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="0.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="216" cy="125" r="6" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="1s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="125" cy="216" r="6" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="1.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="-125" cy="216" r="6" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="-216" cy="125" r="6" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="2.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="-216" cy="-125" r="6" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="3s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="-125" cy="-216" r="6" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="3.5s" repeatCount="indefinite"/>
+        </circle>
+      </g>
+    </g>
+    
+    <!-- 轨道2: 4个点，逆时针 -->
+    <g>
+      <animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="25s" repeatCount="indefinite"/>
+      <circle r="280" fill="none" stroke="none"/>
+      <g>
+        <polygon points="0,-280 -8,-272 0,-264 8,-272" fill="#ff00ff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.2;0.9;0.2" dur="3s" repeatCount="indefinite"/>
+        </polygon>
+        <polygon points="204,-204 -8,-272 -204,-204 8,-272" fill="#ff00ff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.2;0.9;0.2" dur="3s" begin="0.75s" repeatCount="indefinite"/>
+        </polygon>
+        <polygon points="204,204 -8,-272 -204,204 8,-272" fill="#ff00ff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.2;0.9;0.2" dur="3s" begin="1.5s" repeatCount="indefinite"/>
+        </polygon>
+        <polygon points="0,280 -8,-272 0,-264 8,-272" fill="#ff00ff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.2;0.9;0.2" dur="3s" begin="2.25s" repeatCount="indefinite"/>
+        </polygon>
+      </g>
+    </g>
+    
+    <!-- 轨道3: 8个点 -->
+    <g>
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="30s" repeatCount="indefinite"/>
+      <circle r="320" fill="none" stroke="none"/>
+      <g>
+        <circle cx="0" cy="-320" r="4" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="229" cy="-229" r="4" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" begin="0.3125s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="320" cy="0" r="4" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" begin="0.625s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="229" cy="229" r="4" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" begin="0.9375s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="0" cy="320" r="4" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" begin="1.25s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="-229" cy="229" r="4" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" begin="1.5625s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="-320" cy="0" r="4" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" begin="1.875s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="-229" cy="-229" r="4" fill="#00ffff" filter="url(#glow)">
+          <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" begin="2.1875s" repeatCount="indefinite"/>
+        </circle>
+      </g>
+    </g>
+  </g>
+  
+  <!-- 连接线装饰 -->
+  <g transform="translate(400,400)" opacity="0.3">
+    <line x1="0" y1="0" x2="0" y2="-250" stroke="url(#cyanToPurple)" stroke-width="1">
+      <animate attributeName="opacity" values="0;0.5;0" dur="4s" repeatCount="indefinite"/>
+    </line>
+    <line x1="0" y1="0" x2="216" y2="-125" stroke="url(#cyanToPurple)" stroke-width="1">
+      <animate attributeName="opacity" values="0;0.5;0" dur="4s" begin="1s" repeatCount="indefinite"/>
+    </line>
+    <line x1="0" y1="0" x2="-216" y2="-125" stroke="url(#cyanToPurple)" stroke-width="1">
+      <animate attributeName="opacity" values="0;0.5;0" dur="4s" begin="2s" repeatCount="indefinite"/>
+    </line>
+    <line x1="0" y1="0" x2="-216" y2="125" stroke="url(#cyanToPurple)" stroke-width="1">
+      <animate attributeName="opacity" values="0;0.5;0" dur="4s" begin="3s" repeatCount="indefinite"/>
+    </line>
+  </g>
+</svg>

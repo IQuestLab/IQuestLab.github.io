@@ -1,0 +1,65 @@
+body {
+  margin: 0;
+}
+
+.login-gate-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, #1f2937, #020617);
+  color: #fff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", sans-serif;
+}
+
+.login-gate-box {
+  background: rgba(15, 23, 42, 0.9);
+  padding: 32px 40px;
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+  min-width: 260px;
+  max-width: 360px;
+}
+
+.login-gate-box h1 {
+  font-size: 22px;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.login-gate-box form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-gate-box input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+}
+
+.login-gate-box button {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #4f46e5, #22d3ee);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.login-gate-box button:hover {
+  filter: brightness(1.05);
+}
+
+.login-gate-error {
+  min-height: 1em;
+  font-size: 12px;
+  color: #f97373;
+  text-align: center;
+}

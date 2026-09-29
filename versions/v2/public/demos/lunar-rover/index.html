@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月海巡视 · 东方神话月球车探索控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<!-- 3D 月面场景视口 -->
+<canvas id="scene"></canvas>
+
+<!-- 全局火焰边框（低电量触发） -->
+<div id="flame-frame" aria-hidden="true">
+  <div class="flame-band flame-top"></div>
+  <div class="flame-band flame-bottom"></div>
+  <div class="flame-band flame-left"></div>
+  <div class="flame-band flame-right"></div>
+</div>
+
+<!-- HUD 整体（镜头运动时淡出） -->
+<div id="hud">
+
+  <!-- 顶部中央标题 -->
+  <header id="title-bar">
+    <div class="title-rune">月海巡视</div>
+    <div class="title-sub">LUNAR ROVER · 东方神话探索控制台</div>
+  </header>
+
+  <!-- 左上：任务目标面板 -->
+  <section class="panel" id="mission-panel">
+    <div class="panel-head">
+      <span class="panel-title">任务目标</span>
+      <span class="panel-toggle">─</span>
+    </div>
+    <div class="panel-body">
+      <div class="mission-phase">
+        <span class="phase-label">当前阶段</span>
+        <span class="phase-name" id="mission-phase-name">月面冷启动</span>
+      </div>
+      <ol class="objective-list" id="objective-list">
+        <li class="obj done"><span class="obj-num">壹</span><span class="obj-text">系统自检与能源校准</span><span class="obj-state">已完成</span></li>
+        <li class="obj active"><span class="obj-num">贰</span><span class="obj-text">驱动至信标 Alpha 区</span><span class="obj-state">进行中</span></li>
+        <li class="obj"><span class="obj-num">叁</span><span class="obj-text">采集玄武岩样本 ×3</span><span class="obj-state">待命</span></li>
+        <li class="obj"><span class="obj-num">肆</span><span class="obj-text">部署月尘监测浮标</span><span class="obj-state">待命</span></li>
+        <li class="obj"><span class="obj-num">伍</span><span class="obj-text">返航至着陆器</span><span class="obj-state">待命</span></li>
+      </ol>
+      <div class="mission-progress">
+        <div class="mp-bar"><div class="mp-fill" id="mission-fill"></div></div>
+        <span class="mp-text" id="mission-pct">20%</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 右上：罗盘式雷达地图 -->
+  <section class="panel" id="radar-panel">
+    <div class="panel-head">
+      <span class="panel-title">罗盘雷达</span>
+      <span class="panel-toggle">─</span>
+    </div>
+    <div class="panel-body radar-body">
+      <canvas id="radar" width="240" height="240"></canvas>
+      <div class="radar-legend">
+        <span><i class="dot dot-rover"></i>巡视器</span>
+        <span><i class="dot dot-sample"></i>样本点</span>
+        <span><i class="dot dot-hazard"></i>危险区</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 右下：样本清单面板 -->
+  <section class="panel" id="sample-panel">
+    <div class="panel-head">
+      <span class="panel-title">样本清单</span>
+      <span class="panel-toggle">─</span>
+    </div>
+    <div class="panel-body">
+      <ul class="sample-list" id="sample-list">
+        <li class="sample-item"><svg class="sample-ico" viewBox="0 0 24 24"><path d="M12 2 L20 9 L12 22 L4 9 Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4 9 H20" stroke="currentColor" stroke-width="1"/></svg><span class="sample-name">玄武岩芯</span><span class="sample-count" data-target="0">0 / 3</span></li>
+        <li class="sample-item"><svg class="sample-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M12 4 v16 M4 12 h16" stroke="currentColor" stroke-width="0.8"/></svg><span class="sample-name">月海玻璃</span><span class="sample-count" data-target="0">0 / 2</span></li>
+        <li class="sample-item"><svg class="sample-ico" viewBox="0 0 24 24"><path d="M6 18 L10 6 L14 14 L18 4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span class="sample-name">钛铁矿粒</span><span class="sample-count" data-target="0">0 / 5</span></li>
+        <li class="sample-item"><svg class="sample-ico" viewBox="0 0 24 24"><path d="M12 3 L19 12 L12 21 L5 12 Z" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span class="sample-name">斜长岩屑</span><span class="sample-count" data-target="0">0 / 2</span></li>
+      </ul>
+      <div class="sample-total">样本总计 <span id="sample-total">0</span> 份</div>
+    </div>
+  </section>
+
+  <!-- 镜头切换按钮组 -->
+  <div id="camera-controls">
+    <button class="cam-btn active" data-cam="follow" title="跟随视角"><span class="cam-rune">随</span></button>
+    <button class="cam-btn" data-cam="orbit" title="环绕镜头"><span class="cam-rune">环</span></button>
+    <button class="cam-btn" data-cam="side" title="侧视"><span class="cam-rune">侧</span></button>
+    <button class="cam-btn" data-cam="top" title="俯视"><span class="cam-rune">俯</span></button>
+  </div>
+
+  <!-- 底部全宽诊断数据条 -->
+  <section id="diag-bar">
+    <div class="diag-inner">
+
+      <!-- 速度圆形表盘 -->
+      <div class="gauge-wrap">
+        <canvas id="gauge" width="150" height="150"></canvas>
+        <div class="gauge-center">
+          <span class="gauge-value" id="speed-value">0.00</span>
+          <span class="gauge-unit">m/s</span>
+        </div>
+      </div>
+
+      <!-- 系统诊断数值区 -->
+      <div class="diag-stats">
+        <div class="stat" id="stat-battery">
+          <span class="stat-label">电量</span>
+          <div class="stat-bar"><div class="stat-fill" id="battery-fill"></div></div>
+          <span class="stat-value rune" id="battery-value">100%</span>
+        </div>
+        <div class="stat" id="stat-heat">
+          <span class="stat-label">热量</span>
+          <div class="stat-bar heat"><div class="stat-fill" id="heat-fill"></div></div>
+          <span class="stat-value rune" id="heat-value">18°C</span>
+        </div>
+        <div class="stat" id="stat-load">
+          <span class="stat-label">车轮载荷</span>
+          <div class="stat-bar load"><div class="stat-fill" id="load-fill"></div></div>
+          <span class="stat-value rune" id="load-value">42%</span>
+        </div>
+        <div class="stat" id="stat-slip">
+          <span class="stat-label">打滑率</span>
+          <div class="stat-bar slip"><div class="stat-fill" id="slip-fill"></div></div>
+          <span class="stat-value rune" id="slip-value">3%</span>
+        </div>
+      </div>
+
+      <!-- 告警日志滚动区 -->
+      <div class="alert-wrap">
+        <div class="alert-head">告警日志 <span class="alert-count" id="alert-count">0</span></div>
+        <ul class="alert-list" id="alert-list"></ul>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>无限穿越虫洞 - 滚动控制</title>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #000;
+        overflow: hidden; /* 隐藏默认滚动条，我们接管滚动 */
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      canvas {
+        display: block;
+      }
+
+      #ui-layer {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: rgba(255, 255, 255, 0.8);
+        text-align: center;
+        pointer-events: none;
+        mix-blend-mode: difference;
+        user-select: none;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+
+      p {
+        font-size: 0.9rem;
+        opacity: 0.7;
+      }
+
+      .speed-indicator {
+        margin-top: 10px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #0ff;
+        transition: color 0.2s;
+      }
+
+      /* 简单的隐藏滚动条样式 */
+      ::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ui-layer">
+      <h1>WORMHOLE DRIVE</h1>
+      <p>向下滚动加速 / 向上滚动倒车</p>
+      <div class="speed-indicator" id="speed-text">VELOCITY: 0%</div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d", { alpha: false }); // 优化性能
+      const speedText = document.getElementById("speed-text");
+
+      let width, height;
+      let cx, cy;
+
+      // 配置参数
+      const CONFIG = {
+        particleCount: 800, // 粒子数量
+        tunnelDepth: 2000, // 视野深度
+        maxSpeed: 150, // 最大速度
+        accel: 1.5, // 加速度（滚动灵敏度）
+        friction: 0.96, // 摩擦力（停下后的减速）
+        baseColorHue: 220, // 基础色相（蓝色）
+        warmColorHue: 30, // 高速时的色相（橙红色）
+        starTrail: 0.3, // 拖尾长度
+      };
+
+      // 状态变量
+      let speed = 0;
+      let positionZ = 0;
+      let hue = CONFIG.baseColorHue;
+
+      // 粒子类
+      class Particle {
+        constructor() {
+          this.reset(true);
+        }
+
+        reset(initial = false) {
+          // 随机生成在空间中的坐标
+          this.x = (Math.random() - 0.5) * width * 3;
+          this.y = (Math.random() - 0.5) * height * 3;
+
+          // 如果是初始化，随机分布在整个隧道里
+          // 如果是重置，放在最远处
+          this.z = initial
+            ? Math.random() * CONFIG.tunnelDepth
+            : CONFIG.tunnelDepth;
+
+          this.size = Math.random() * 2 + 0.5;
+          this.colorOffset = Math.random() * 40 - 20; // 颜色微调
+        }
+
+        update() {
+          // 根据速度移动 Z 轴
+          this.z -= speed;
+
+          // 粒子跑到了摄像机后面，重置到远处
+          if (this.z <= 0) {
+            this.reset();
+            this.z = CONFIG.tunnelDepth; // 防止除零错误
+          }
+
+          // 粒子在远处太远了，也拉回来（循环利用）
+          if (this.z > CONFIG.tunnelDepth) {
+            this.z -= CONFIG.tunnelDepth;
+          }
+        }
+
+        draw() {
+          // 透视投影公式
+          // scale = focalLength / z
+          // 简化版：焦距设为 300 左右比较自然
+          const perspective = 400 / (this.z + 10); // +10 防止贴脸穿模
+
+          const sx = this.x * perspective + cx;
+          const sy = this.y * perspective + cy;
+
+          // 粒子大小随透视变化
+          const size = this.size * perspective;
+
+          // 计算颜色：基于速度混合色相
+          const speedRatio = Math.min(Math.abs(speed) / CONFIG.maxSpeed, 1);
+          // 在基础色相和暖色之间插值
+          const currentHue = lerp(
+            CONFIG.baseColorHue,
+            CONFIG.warmColorHue,
+            speedRatio * speedRatio
+          ); //平方插值让变色更平滑
+          const finalHue = currentHue + this.colorOffset;
+
+          // 亮度随距离衰减（远处变暗）
+          const lightness = 50 * (1 - this.z / CONFIG.tunnelDepth) + 20;
+
+          // 绘制
+          ctx.fillStyle = `hsl(${finalHue}, 100%, ${lightness}%)`;
+
+          ctx.beginPath();
+          ctx.arc(sx, sy, size, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 速度极快时绘制简单的线条拖尾
+          if (speed > 30) {
+            const prevPerspective = 400 / (this.z + speed * 2 + 10);
+            const px = this.x * prevPerspective + cx;
+            const py = this.y * prevPerspective + cy;
+
+            ctx.strokeStyle = `hsla(${finalHue}, 100%, ${lightness}%, 0.3)`;
+            ctx.lineWidth = size;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(sx, sy);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // 辅助函数：线性插值
+      function lerp(start, end, t) {
+        return start * (1 - t) + end * t;
+      }
+
+      // 初始化
+      const particles = [];
+      for (let i = 0; i < CONFIG.particleCount; i++) {
+        particles.push(new Particle());
+      }
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        cx = width / 2;
+        cy = height / 2;
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+
+      // 核心动画循环
+      function animate() {
+        // 1. 处理物理逻辑
+        // 速度衰减（摩擦力）
+        speed *= CONFIG.friction;
+
+        // 极小速度归零
+        if (Math.abs(speed) < 0.1) speed = 0;
+
+        // 更新总位移（用于可能的纹理滚动等）
+        positionZ += speed;
+
+        // 2. 绘制背景
+        if (speed > 50) {
+          // 高速时背景略微变红，增加沉浸感
+          ctx.fillStyle = `rgba(20, 0, 0, ${CONFIG.starTrail})`;
+        } else {
+          // 低速时清空画布
+          ctx.fillStyle = `rgba(0, 0, 0, ${CONFIG.starTrail})`;
+        }
+        // 这里用 fillRect 覆盖上一帧，透明度由 starTrail 决定，形成拖尾效果
+        ctx.fillRect(0, 0, width, height);
+
+        // 在高速状态下，画布中心加一点径向渐变，增强速度感
+        if (Math.abs(speed) > 60) {
+          const gradient = ctx.createRadialGradient(cx, cy, 50, cx, cy, width);
+          const opacity = (Math.abs(speed) - 60) / 100;
+          gradient.addColorStop(0, `rgba(255, 100, 50, 0)`);
+          gradient.addColorStop(0.5, `rgba(255, 200, 100, ${opacity * 0.3})`);
+          gradient.addColorStop(1, `rgba(255, 50, 0, ${opacity * 0.5})`);
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, width, height);
+        }
+
+        // 3. 绘制粒子
+        // 根据速度决定是否画线（速度越快，线条拉得越长，模拟运动模糊）
+        // 这里为了性能，我们用“通过增加粒子数量或增大粒子尺寸”来模拟模糊
+
+        // 开启颜色混合模式
+        ctx.globalCompositeOperation = "lighter";
+
+        particles.sort((a, b) => b.z - a.z); // 从远到近排序，确保遮挡关系正确
+
+        particles.forEach((p) => {
+          p.update();
+          p.draw();
+        });
+
+        // 恢复默认混合模式
+        ctx.globalCompositeOperation = "source-over";
+
+        // 4. 更新 UI
+        updateUI();
+
+        requestAnimationFrame(animate);
+      }
+
+      function updateUI() {
+        const displaySpeed = Math.min(Math.floor(Math.abs(speed) * 2), 100);
+        speedText.innerText = `VELOCITY: ${displaySpeed}%`;
+
+        // 改变 UI 颜色
+        const ratio = Math.min(Math.abs(speed) / CONFIG.maxSpeed, 1);
+        const uiHue = lerp(220, 30, ratio);
+        speedText.style.color = `hsl(${uiHue}, 100%, 70%)`;
+
+        // 简单的震动效果
+        if (speed > 80) {
+          const shake = (Math.random() - 0.5) * (speed - 80) * 0.1;
+          document.getElementById(
+            "ui-layer"
+          ).style.transform = `translate(calc(-50% + ${shake}px), calc(-50% + ${shake}px))`;
+        } else {
+          document.getElementById(
+            "ui-layer"
+          ).style.transform = `translate(-50%, -50%)`;
+        }
+      }
+
+      // 滚动事件监听
+      window.addEventListener(
+        "wheel",
+        (e) => {
+          // 阻止默认滚动行为
+          e.preventDefault();
+
+          // e.deltaY > 0 是向下滚 (前进), e.deltaY < 0 是向上滚 (后退)
+          // 根据需求：下滑加速前进 -> deltaY > 0 -> 加速度 > 0
+          const delta = e.deltaY;
+
+          // 累加速度
+          speed += delta * 0.05 * CONFIG.accel;
+
+          // 限制最大极限速度
+          if (speed > CONFIG.maxSpeed) speed = CONFIG.maxSpeed;
+          if (speed < -CONFIG.maxSpeed / 2) speed = -CONFIG.maxSpeed / 2; // 倒车慢一点
+        },
+        { passive: false }
+      );
+
+      // 触摸支持 (手机上滑)
+      let touchStartY = 0;
+      window.addEventListener(
+        "touchstart",
+        (e) => (touchStartY = e.touches[0].clientY)
+      );
+      window.addEventListener(
+        "touchmove",
+        (e) => {
+          const touchY = e.touches[0].clientY;
+          const delta = touchStartY - touchY; // 上滑为正，下滑为负 (相对于window坐标)
+          // 调整逻辑向下滑加速 (页面坐标y向下是正)
+          speed += delta * 0.1 * CONFIG.accel;
+          touchStartY = touchY;
+          e.preventDefault();
+        },
+        { passive: false }
+      );
+
+      // 启动
+      animate();
+    </script>
+  </body>
+</html>

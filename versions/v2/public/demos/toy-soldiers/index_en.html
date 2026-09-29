@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toy Soldier Battle · Toy Soldier Battle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="en/css/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- ================= Entry screen ================= -->
+  <section id="screen-entry" class="screen active">
+    <canvas id="bg-blocks"></canvas>
+    <div class="entry-wrap">
+      <div class="logo-blocks" aria-hidden="true">
+        <span class="lb lb1"></span><span class="lb lb2"></span><span class="lb lb3"></span>
+        <span class="lb lb4"></span><span class="lb lb5"></span><span class="lb lb6"></span>
+      </div>
+      <h1 class="game-title"><span class="tt-soldier">Toy Soldier</span><span class="tt-battle">Battle</span></h1>
+      <p class="game-sub">Ghibli Kids' Room · Miniature 3D Multiplayer FPS · Clockwork Godzilla Raid Alert</p>
+      <div class="entry-actions">
+        <button id="btn-create" class="btn btn-red btn-big">🧱 New Room</button>
+        <div class="join-row">
+          <input id="input-room" class="input-block" placeholder="Enter room code" maxlength="6" autocomplete="off">
+          <button id="btn-join" class="btn btn-blue">Join Room</button>
+        </div>
+      </div>
+      <div id="room-share" class="room-share hidden">
+        <div class="share-label">🎉 Room created! Toss the link to your teammates:</div>
+        <div class="share-row">
+          <input id="share-url" class="input-block" readonly>
+          <button id="btn-copy" class="btn btn-yellow">📋 Copy</button>
+        </div>
+        <div class="share-tip">No sign-up · Open and play · Best with 3–7 players</div>
+      </div>
+      <div class="entry-foot">Pure front-end · AI teammates online · Tilt-shift miniature photography</div>
+    </div>
+  </section>
+
+  <!-- ================= Lobby screen ================= -->
+  <section id="screen-lobby" class="screen">
+    <div class="lobby-grid">
+      <div class="lobby-left">
+        <div class="room-code-card block-card studs">
+          <div class="card-label">Room Code</div>
+          <div id="lobby-room-code" class="room-code">------</div>
+          <button id="btn-copy-code" class="btn btn-yellow btn-small">📋 Copy Room Code</button>
+        </div>
+        <div class="player-list-card block-card studs">
+          <div class="card-label">Players <span id="player-count" class="count-chip">1/8</span></div>
+          <div id="player-list" class="player-list"></div>
+        </div>
+        <button id="btn-start" class="btn btn-red btn-big">🚀 Start Battle</button>
+        <button id="btn-leave" class="btn btn-ghost btn-small">← Back to Home</button>
+      </div>
+      <div class="lobby-right">
+        <div class="preview-card block-card studs">
+          <div class="card-label">Your Plastic Figure</div>
+          <canvas id="preview-canvas"></canvas>
+          <div class="preview-tip">🖱️ Drag to rotate · Scroll to zoom</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Main battle scene ================= -->
+  <section id="screen-game" class="screen">
+    <canvas id="game-canvas"></canvas>
+
+    <div id="hud">
+      <div id="crosshair"><span></span><span></span><span></span><span></span><b></b></div>
+      <div id="hitmarker">✕</div>
+
+      <!-- Top-left: minimap -->
+      <div id="minimap-wrap" class="hud-card block-card">
+        <canvas id="minimap" width="176" height="176"></canvas>
+        <div class="minimap-label">🗺️ Room Map</div>
+      </div>
+
+      <!-- Top-right: leaderboard -->
+      <div id="leaderboard-wrap" class="hud-card block-card">
+        <div class="lb-header" id="lb-toggle">🏆 Leaderboard <span class="lb-arrow">▼</span></div>
+        <div id="lb-body" class="lb-body"></div>
+      </div>
+
+      <!-- Bottom-left: health + items + chat -->
+      <div id="status-wrap">
+        <div id="health-card" class="hud-card block-card">
+          <div class="hp-row">
+            <div class="hp-icon">❤️</div>
+            <div class="hp-bar"><div id="hp-fill" class="hp-fill"></div><div id="hp-shield" class="hp-shield"></div></div>
+            <div id="hp-text" class="hp-text">100</div>
+          </div>
+          <div class="item-row">
+            <div class="item-chip" id="chip-battery" title="Wind-up Battery">🔋 <span>0</span></div>
+            <div class="item-chip" id="chip-magnet" title="Power Magnet">🧲 <span>0</span></div>
+            <div class="item-chip gear-chip" id="chip-gears" title="Gear Currency">⚙️ <span>0</span></div>
+          </div>
+        </div>
+        <div id="chat-card" class="hud-card">
+          <div id="chat-log" class="chat-log"></div>
+          <div id="chat-quick" class="chat-quick">
+            <button data-msg="Charge!">Charge!</button>
+            <button data-msg="Cover me!">Cover me!</button>
+            <button data-msg="Hahahaha">Haha</button>
+            <button data-msg="Where's the BOSS?">BOSS?</button>
+          </div>
+          <div class="chat-input-row">
+            <input id="chat-input" class="chat-input" placeholder="Send a wind-up message… (Enter)" maxlength="60" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom-right: weapon bar + ammo -->
+      <div id="weapon-wrap">
+        <div id="reload-bar" class="reload-bar hidden"><div id="reload-fill"></div><span>Reloading…</span></div>
+        <div id="weapon-bar" class="weapon-bar"></div>
+        <div id="ammo-card" class="hud-card block-card">
+          <div id="ammo-count" class="ammo-count">30<span>/90</span></div>
+          <div id="weapon-name" class="weapon-name">Bubble Gun</div>
+        </div>
+      </div>
+
+      <div id="killfeed" class="killfeed"></div>
+      <div id="interact-prompt" class="interact-prompt hidden">Press <b>E</b> to open the wind-up music box 🎵</div>
+
+      <!-- BOSS raid -->
+      <div id="boss-banner" class="boss-banner hidden">
+        <div class="boss-banner-inner">
+          <div class="boss-warn">⚠️ W A R N I N G ⚠️</div>
+          <div class="boss-name">Clockwork Godzilla incoming!</div>
+          <div class="boss-sub">CLOCKWORK GODZILLA RAID</div>
+        </div>
+      </div>
+      <div id="boss-hp-wrap" class="boss-hp-wrap hidden">
+        <div class="boss-hp-label">🦖 Clockwork Godzilla</div>
+        <div class="boss-hp-bar"><div id="boss-hp-fill"></div></div>
+      </div>
+
+      <div id="start-prompt" class="start-prompt">🖱️ Click the screen to lock the mouse<br><small>WASD move · Left click shoot · R reload · 1/2/3 switch weapon · E interact</small></div>
+      <div id="damage-vignette" class="damage-vignette"></div>
+    </div>
+
+    <!-- Wind-up music box shop -->
+    <div id="shop-modal" class="modal-overlay hidden">
+      <div class="shop-box block-card">
+        <div class="shop-lid" id="shop-lid"></div>
+        <div class="shop-header">
+          <div class="shop-title">🎵 Wind-up Music Box</div>
+          <div class="shop-gears">⚙️ <span id="shop-gear-count">0</span></div>
+          <button id="shop-close" class="btn btn-ghost btn-small">✕ Close</button>
+        </div>
+        <div id="shop-items" class="shop-items"></div>
+      </div>
+    </div>
+
+    <!-- Death spectate -->
+    <div id="death-overlay" class="death-overlay hidden">
+      <div class="death-card block-card">
+        <div class="death-title">💥 You were knocked out!</div>
+        <div class="death-by" id="death-by">Defeated by Tin Squad Captain</div>
+        <div class="death-plane">✈️</div>
+        <div class="death-respawn-label">Spectating from a paper plane · Respawn countdown</div>
+        <div class="death-respawn" id="death-respawn">8</div>
+      </div>
+    </div>
+  </section>
+
+  <script src="en/js/audio.js"></script>
+  <script src="en/js/models.js"></script>
+  <script src="en/js/game.js"></script>
+  <script src="en/js/app.js"></script>
+</body>
+</html>

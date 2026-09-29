@@ -4,6 +4,4 @@ dist/
 .npm-logs/
 .env
 .env.*
-
-
-
+.DS_Store
