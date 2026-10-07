@@ -11,7 +11,7 @@ export const links = {
 
 export const downloads = [
   { id: 'huggingface', name: 'Hugging Face', body: t('Model weights and model card', '模型权重与模型卡') },
-  { id: 'modelscope', name: t('ModelScope (pending)', 'ModelScope（待上线）'), body: t('Model weights and model card', '模型权重与模型卡') },
+  { id: 'modelscope', name: t('ModelScope', 'ModelScope'), body: t('Model weights and model card', '模型权重与模型卡') },
   { id: 'github', name: 'GitHub', body: t('Inference code and examples', '推理代码与示例') },
 ]
 
