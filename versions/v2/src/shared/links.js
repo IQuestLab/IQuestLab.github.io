@@ -2,7 +2,7 @@ import { t } from './i18n.js'
 
 // External links. '#' means "not published yet": pages show them as inert placeholders.
 export const links = {
-  report: '#',
+  report: 'https://arxiv.org/abs/2610.30949',
   github: 'https://github.com/IQuestLab/IQuest-Q1',
   huggingface: 'https://huggingface.co/IQuestLab/IQuest-Q1',
   modelscope: 'https://www.modelscope.cn/IQuestLab/IQuest-Q1',
